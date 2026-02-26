@@ -1,4 +1,4 @@
-import { Component, Input, OnChanges, SimpleChanges, inject, signal, OnDestroy, effect } from '@angular/core';
+import { Component, OnDestroy, inject, input, signal, effect } from '@angular/core';
 import { _Object } from '@aws-sdk/client-s3';
 import { DatePipe, SlicePipe } from '@angular/common';
 import { S3Service } from '../../services/s3.service';
@@ -13,11 +13,11 @@ import { MonacoEditorComponent } from '../monaco-editor/monaco-editor';
     <div
       class="h-full bg-white border-l border-gray-200 flex flex-col w-144 font-sans transition-all duration-300 shadow-xl overflow-hidden dark:bg-slate-950 dark:border-slate-800"
     >
-      @if (file) {
+      @if (file()) {
         <!-- Header -->
         <div class="px-6 py-4 bg-white border-b border-gray-100 shrink-0 shadow-sm z-10 dark:bg-slate-950 dark:border-slate-800">
-          <h3 class="text-xl font-bold text-gray-900 truncate dark:text-slate-50" [title]="file.Key">
-            {{ getFileName(file.Key) }}
+          <h3 class="text-xl font-bold text-gray-900 truncate dark:text-slate-50" [title]="file()?.Key">
+            {{ getFileName(file()?.Key) }}
           </h3>
         </div>
 
@@ -136,7 +136,7 @@ import { MonacoEditorComponent } from '../monaco-editor/monaco-editor';
                 <svg class="w-5 h-5 text-gray-400 group-hover:text-gray-600 transition-colors dark:text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
                 </svg>
-                {{ copySuccess ? 'Copied' : 'Copy URI' }}
+                {{ copySuccess() ? 'Copied' : 'Copy URI' }}
               </button>
             </div>
 
@@ -146,23 +146,23 @@ import { MonacoEditorComponent } from '../monaco-editor/monaco-editor';
                 <div class="grid grid-cols-1 divide-y divide-gray-100 dark:divide-slate-800">
                   <div class="flex items-center justify-between px-4 py-2.5 hover:bg-white transition-colors dark:hover:bg-slate-800/40">
                     <span class="text-[13px] font-medium text-gray-500 dark:text-slate-400">Size</span>
-                    <span class="text-[13px] font-bold text-gray-900 dark:text-slate-200">{{ formatBytes(file.Size || 0) }}</span>
+                    <span class="text-[13px] font-bold text-gray-900 dark:text-slate-200">{{ formatBytes(file()?.Size || 0) }}</span>
                   </div>
                   <div class="flex items-center justify-between px-4 py-2.5 hover:bg-white transition-colors dark:hover:bg-slate-800/40">
                     <span class="text-[13px] font-medium text-gray-500 dark:text-slate-400">Modified</span>
-                    <span class="text-[13px] font-bold text-gray-900 dark:text-slate-200">{{ file.LastModified | date: 'MMM d, y, h:mm a' }}</span>
+                    <span class="text-[13px] font-bold text-gray-900 dark:text-slate-200">{{ file()?.LastModified | date: 'MMM d, y, h:mm a' }}</span>
                   </div>
                   <div class="flex items-center justify-between px-4 py-2.5 hover:bg-white transition-colors dark:hover:bg-slate-800/40">
                     <span class="text-[13px] font-medium text-gray-500 dark:text-slate-400">Storage Class</span>
-                    <span class="text-[13px] font-bold text-gray-900 dark:text-slate-200">{{ file.StorageClass || 'STANDARD' }}</span>
+                    <span class="text-[13px] font-bold text-gray-900 dark:text-slate-200">{{ file()?.StorageClass || 'STANDARD' }}</span>
                   </div>
                   <div class="flex flex-col gap-0.5 px-4 py-2.5 hover:bg-white transition-colors dark:hover:bg-slate-800/40">
                     <span class="text-[11px] font-semibold text-gray-400 opacity-80 uppercase tracking-tight dark:text-slate-500">ETag (MD5)</span>
-                    <span class="text-[11px] font-mono text-gray-600 break-all select-all leading-tight dark:text-slate-400">{{ file.ETag | slice: 1 : -1 }}</span>
+                    <span class="text-[11px] font-mono text-gray-600 break-all select-all leading-tight dark:text-slate-400">{{ file()?.ETag | slice: 1 : -1 }}</span>
                   </div>
                   <div class="flex flex-col gap-0.5 px-4 py-3 hover:bg-white transition-colors dark:hover:bg-slate-800/40">
                     <span class="text-[11px] font-semibold text-gray-400 opacity-80 uppercase tracking-tight dark:text-slate-500">Full Path</span>
-                    <span class="text-[11px] font-medium text-gray-500 break-all select-all leading-relaxed dark:text-slate-400">{{ file.Key }}</span>
+                    <span class="text-[11px] font-medium text-gray-500 break-all select-all leading-relaxed dark:text-slate-400">{{ file()?.Key }}</span>
                   </div>
                 </div>
               </div>
@@ -186,14 +186,15 @@ import { MonacoEditorComponent } from '../monaco-editor/monaco-editor';
     .w-144 { width: 36rem; }
   `]
 })
-export class DetailsPanelComponent implements OnChanges, OnDestroy {
-  @Input() file: _Object | null = null;
-  @Input() bucketName = '';
+export class DetailsPanelComponent implements OnDestroy {
+  /** Signal inputs — reactive by default, no ngOnChanges needed */
+  file = input<_Object | null>(null);
+  bucketName = input('');
 
   private s3Service = inject(S3Service);
   protected themeService = inject(ThemeService);
 
-  copySuccess = false;
+  copySuccess = signal(false);
   isDownloading = signal(false);
 
   isPreviewLoading = signal(false);
@@ -201,13 +202,13 @@ export class DetailsPanelComponent implements OnChanges, OnDestroy {
   previewContent = signal<string | null>(null);
   isClipped = signal(false);
 
-  constructor() { }
-
-  ngOnChanges(changes: SimpleChanges) {
-    if (changes['file']) {
-      this.isDecompressing.set(false); // Reset decompressing state on file change
+  constructor() {
+    // Replaces ngOnChanges — runs whenever file() changes
+    effect(() => {
+      const _ = this.file(); // track
+      this.isDecompressing.set(false);
       this.fetchPreview();
-    }
+    });
   }
 
   ngOnDestroy() { }
@@ -219,32 +220,28 @@ export class DetailsPanelComponent implements OnChanges, OnDestroy {
   }
 
   isGzip(): boolean {
-    return !!this.file?.Key?.toLowerCase().endsWith('.gz');
+    return !!this.file()?.Key?.toLowerCase().endsWith('.gz');
   }
 
   isPreviewable(): boolean {
-    if (!this.file?.Key) return false;
-    const key = this.file.Key.toLowerCase();
-    // Normal previewable files
+    if (!this.file()?.Key) return false;
+    const key = this.file()!.Key!.toLowerCase();
     if (key.endsWith('.txt') || key.endsWith('.json') || key.endsWith('.md') || key.endsWith('.log') || key.endsWith('.js') || key.endsWith('.ts')) {
       return true;
     }
-    // Gzipped files are "previewable" via decompression layer
-    if (this.isGzip()) {
-      return true;
-    }
+    if (this.isGzip()) return true;
     return false;
   }
 
   async decompressGzip() {
-    if (!this.file || !this.file.Key || !this.bucketName) return;
+    if (!this.file()?.Key || !this.bucketName()) return;
 
     this.isDecompressing.set(true);
     try {
       // Fetch the first 256KB of the gzipped file
       const binaryData = await this.s3Service.getObjectBinaryRange(
-        this.bucketName,
-        this.file.Key,
+        this.bucketName(),
+        this.file()!.Key!,
         1024 * 256
       );
 
@@ -282,7 +279,7 @@ export class DetailsPanelComponent implements OnChanges, OnDestroy {
     this.previewContent.set(null);
     this.isClipped.set(false);
 
-    if (!this.file || !this.file.Key || !this.bucketName || !this.isPreviewable()) {
+    if (!this.file()?.Key || !this.bucketName() || !this.isPreviewable()) {
       return;
     }
 
@@ -295,8 +292,8 @@ export class DetailsPanelComponent implements OnChanges, OnDestroy {
     this.isPreviewLoading.set(true);
     try {
       const { content, isClipped } = await this.s3Service.getObjectRange(
-        this.bucketName,
-        this.file.Key,
+        this.bucketName(),
+        this.file()!.Key!,
         1024 * 5
       );
 
@@ -310,9 +307,9 @@ export class DetailsPanelComponent implements OnChanges, OnDestroy {
     }
   }
 
-  protected getLanguage(): string {
-    if (!this.file?.Key) return 'plaintext';
-    let key = this.file.Key.toLowerCase();
+  getLanguage(): string {
+    if (!this.file()?.Key) return 'plaintext';
+    let key = this.file()!.Key!.toLowerCase();
 
     // If it's a gzipped file, we check the extension BEFORE the .gz
     if (key.endsWith('.gz')) {
@@ -336,15 +333,15 @@ export class DetailsPanelComponent implements OnChanges, OnDestroy {
   }
 
   async download() {
-    if (!this.file || !this.file.Key || !this.bucketName) return;
+    if (!this.file()?.Key || !this.bucketName()) return;
 
     this.isDownloading.set(true);
     try {
-      const blob = await this.s3Service.getObject(this.bucketName, this.file.Key);
+      const blob = await this.s3Service.getObject(this.bucketName(), this.file()!.Key!);
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = this.getFileName(this.file.Key);
+      a.download = this.getFileName(this.file()!.Key);
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -357,13 +354,13 @@ export class DetailsPanelComponent implements OnChanges, OnDestroy {
   }
 
   copyS3Uri() {
-    if (!this.file || !this.file.Key || !this.bucketName) return;
+    if (!this.file()?.Key || !this.bucketName()) return;
 
-    const uri = `s3://${this.bucketName}/${this.file.Key}`;
+    const uri = `s3://${this.bucketName()}/${this.file()!.Key}`;
     navigator.clipboard.writeText(uri).then(() => {
-      this.copySuccess = true;
+      this.copySuccess.set(true);
       setTimeout(() => {
-        this.copySuccess = false;
+        this.copySuccess.set(false);
       }, 2000);
     });
   }

@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { S3Service } from '../../services/s3.service';
 import { StateService } from '../../services/state.service';
@@ -35,18 +35,18 @@ import { Router } from '@angular/router';
             }
           </div>
 
-          @if (errorMessage) {
+          @if (errorMessage()) {
             <div class="mb-4 p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-200 dark:bg-red-900/20 dark:border-red-900/30 dark:text-red-400">
-              {{ errorMessage }}
+              {{ errorMessage() }}
             </div>
           }
 
           <button
             type="submit"
-            [disabled]="form.invalid || isLoading"
+            [disabled]="form.invalid || isLoading()"
             class="w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold py-3 px-4 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center cursor-pointer active:scale-[0.99] shadow-lg shadow-blue-100 dark:shadow-none"
           >
-            @if (isLoading) {
+            @if (isLoading()) {
               <svg
                 class="animate-spin -ml-1 mr-2 h-5 w-5 text-white"
                 fill="none"
@@ -89,14 +89,14 @@ export class SetupWizardComponent {
     ],
   });
 
-  isLoading = false;
-  errorMessage = '';
+  isLoading = signal(false);
+  errorMessage = signal('');
 
   async connect() {
     if (this.form.invalid) return;
 
-    this.isLoading = true;
-    this.errorMessage = '';
+    this.isLoading.set(true);
+    this.errorMessage.set('');
     const endpoint = this.form.getRawValue().endpoint;
 
     try {
@@ -110,10 +110,10 @@ export class SetupWizardComponent {
       this.router.navigate(['/explorer', { endpoint: btoa(endpoint) }]);
     } catch (error: any) {
       console.error('Connection failed:', error);
-      this.errorMessage = error?.message || 'Failed to connect to LocalStack instance.';
+      this.errorMessage.set(error?.message || 'Failed to connect to LocalStack instance.');
       this.s3Service.disconnect();
     } finally {
-      this.isLoading = false;
+      this.isLoading.set(false);
     }
   }
 }
