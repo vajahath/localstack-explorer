@@ -1,14 +1,14 @@
-import { Component, Input, OnChanges, SimpleChanges, inject, signal, ViewChild, ElementRef, OnDestroy, effect } from '@angular/core';
+import { Component, Input, OnChanges, SimpleChanges, inject, signal, OnDestroy, effect } from '@angular/core';
 import { _Object } from '@aws-sdk/client-s3';
 import { DatePipe, SlicePipe } from '@angular/common';
 import { S3Service } from '../../services/s3.service';
 import { ThemeService } from '../../services/theme.service';
-import loader from '@monaco-editor/loader';
+import { MonacoEditorComponent } from '../monaco-editor/monaco-editor';
 
 @Component({
   selector: 'app-details-panel',
   standalone: true,
-  imports: [DatePipe, SlicePipe],
+  imports: [DatePipe, SlicePipe, MonacoEditorComponent],
   template: `
     <div
       class="h-full bg-white border-l border-gray-200 flex flex-col w-144 font-sans transition-all duration-300 shadow-xl overflow-hidden dark:bg-slate-950 dark:border-slate-800"
@@ -37,8 +37,22 @@ import loader from '@monaco-editor/loader';
               </div>
             }
 
-            <!-- Monaco Editor Container - Always in DOM while file is selected -->
-            <div #editorContainer class="w-full h-full" [class.invisible]="!previewContent()"></div>
+            <!-- Monaco Editor Container with Deferred Loading -->
+            @if (previewContent() !== null) {
+              @defer (on timer(100ms)) {
+                <app-monaco-editor 
+                  [content]="previewContent()!" 
+                  [language]="getLanguage()"
+                  class="w-full h-full"
+                ></app-monaco-editor>
+              } @loading {
+                <div class="absolute inset-0 flex items-center justify-center bg-gray-50/50 dark:bg-slate-900/50">
+                  <div class="text-xs font-bold text-blue-500 animate-pulse">Initializing Editor...</div>
+                </div>
+              } @placeholder {
+                 <div class="w-full h-full bg-gray-50 dark:bg-slate-900 border-b border-gray-100 dark:border-slate-800"></div>
+              }
+            }
 
             @if (!previewContent() && !isPreviewLoading()) {
               <div class="absolute inset-0 flex flex-col items-center justify-center p-12 text-gray-400 bg-gray-50 z-10 dark:bg-slate-900 dark:text-slate-500">
@@ -176,11 +190,8 @@ export class DetailsPanelComponent implements OnChanges, OnDestroy {
   @Input() file: _Object | null = null;
   @Input() bucketName = '';
 
-  @ViewChild('editorContainer') editorContainer!: ElementRef;
-
   private s3Service = inject(S3Service);
   protected themeService = inject(ThemeService);
-  private editorInstance: any = null;
 
   copySuccess = false;
   isDownloading = signal(false);
@@ -190,25 +201,7 @@ export class DetailsPanelComponent implements OnChanges, OnDestroy {
   previewContent = signal<string | null>(null);
   isClipped = signal(false);
 
-  constructor() {
-    effect(() => {
-      const content = this.previewContent();
-      if (this.editorInstance && content !== null) {
-        this.updateEditor(content);
-      }
-    });
-
-    // Handle theme changes for Monaco
-    effect(() => {
-      const isDark = this.themeService.isDark();
-      if (this.editorInstance) {
-        const monaco = (window as any).monaco;
-        if (monaco) {
-          monaco.editor.setTheme(isDark ? 'vs-dark' : 'vs');
-        }
-      }
-    });
-  }
+  constructor() { }
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['file']) {
@@ -217,16 +210,7 @@ export class DetailsPanelComponent implements OnChanges, OnDestroy {
     }
   }
 
-  ngOnDestroy() {
-    this.disposeEditor();
-  }
-
-  private disposeEditor() {
-    if (this.editorInstance) {
-      this.editorInstance.dispose();
-      this.editorInstance = null;
-    }
-  }
+  ngOnDestroy() { }
 
   getFileName(key?: string): string {
     if (!key) return 'Unknown File';
@@ -273,17 +257,8 @@ export class DetailsPanelComponent implements OnChanges, OnDestroy {
           this.previewContent.set(`Failed to decompress: ${data.error}`);
         } else {
           let text = data.text;
-
           this.previewContent.set(text);
           this.isClipped.set(true); // Gzip preview is always "clipped" in this implementation
-
-          setTimeout(() => {
-            if (!this.editorInstance) {
-              this.initMonaco();
-            } else {
-              this.updateEditor(text);
-            }
-          }, 0);
         }
         this.isDecompressing.set(false);
         worker.terminate();
@@ -307,11 +282,7 @@ export class DetailsPanelComponent implements OnChanges, OnDestroy {
     this.previewContent.set(null);
     this.isClipped.set(false);
 
-    // If bucketName also changed, we might need to dispose editor if it's from a different context? 
-    // Not strictly necessary but good to be safe.
-
     if (!this.file || !this.file.Key || !this.bucketName || !this.isPreviewable()) {
-      this.disposeEditor();
       return;
     }
 
@@ -331,15 +302,6 @@ export class DetailsPanelComponent implements OnChanges, OnDestroy {
 
       this.previewContent.set(content);
       this.isClipped.set(isClipped);
-
-      // Delay slightly to ensure ViewChild has updated if @if(file) just triggered
-      setTimeout(() => {
-        if (!this.editorInstance) {
-          this.initMonaco();
-        } else {
-          this.updateEditor(content);
-        }
-      }, 0);
     } catch (err) {
       console.error('Failed to fetch preview', err);
       this.previewContent.set('Error: Could not load content preview.');
@@ -348,50 +310,7 @@ export class DetailsPanelComponent implements OnChanges, OnDestroy {
     }
   }
 
-  private async initMonaco() {
-    try {
-      if (!this.editorContainer) return;
-
-      const monaco = await loader.init();
-      if (!this.editorContainer) return;
-
-      const initialTheme = this.themeService.isDark() ? 'vs-dark' : 'vs';
-
-      this.editorInstance = monaco.editor.create(this.editorContainer.nativeElement, {
-        value: this.previewContent() || '',
-        language: this.getLanguage(),
-        theme: initialTheme,
-        readOnly: true,
-        automaticLayout: true,
-        minimap: { enabled: false },
-        fontSize: 12,
-        scrollBeyondLastLine: false,
-        lineNumbers: 'on',
-        renderWhitespace: 'none',
-        wordWrap: 'on',
-        padding: { top: 10, bottom: 10 }
-      });
-    } catch (error) {
-      console.error('Monaco failed to load', error);
-    }
-  }
-
-  private updateEditor(content: string) {
-    if (this.editorInstance) {
-      const monaco = (window as any).monaco;
-      if (monaco) {
-        const model = this.editorInstance.getModel();
-        if (model) {
-          monaco.editor.setModelLanguage(model, this.getLanguage());
-        }
-      }
-      this.editorInstance.setValue(content);
-      // Force a layout refresh when content changes or container becomes visible
-      setTimeout(() => this.editorInstance?.layout(), 50);
-    }
-  }
-
-  private getLanguage(): string {
+  protected getLanguage(): string {
     if (!this.file?.Key) return 'plaintext';
     let key = this.file.Key.toLowerCase();
 
