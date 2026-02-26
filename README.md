@@ -1,59 +1,79 @@
-# LocalstackUi
+# LocalStack Explorer
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.1.5.
+A modern, fast, and fully client-side UI for exploring LocalStack S3 buckets. Built with Angular and inspired by the macOS Finder's Miller column layout.
 
-## Development server
+![LocalStack Explorer Mockup](https://raw.githubusercontent.com/vajahath/localstack-explorer/main/screenshot.png) *(Note: Placeholder for actual screenshot)*
 
-To start a local development server, run:
+## ✨ Features
 
+- **Miller Column Navigation**: Intuitive multi-column layout for navigating through deeply nested S3 folders and objects.
+- **100% Client-Side**: Runs entirely in your browser. No server-side component needed beyond your LocalStack instance.
+- **S3 Object Management**: Browse buckets, list objects, and view detailed metadata with **Pagination Support** for large directories.
+- **Code Previews**: Integrated [Monaco Editor](https://microsoft.github.io/monaco-editor/) for high-quality syntax highlighting.
+- **Smart Previews**: Automatically handles **GZIP decompression** in a background web worker for compressed log files or data.
+- **Setup Wizard**: Easy configuration to connect to your local or remote LocalStack instance.
+- **Modern UI/UX**: Built with a "premium" feel, featuring dark mode support and smooth transitions.
+- **High Performance**: Leverages Angular Signals for efficient change detection and reactive state management.
+
+## 🛠️ Tech Stack
+
+- **Framework**: [Angular 21+](https://angular.dev/) (using Signals, Standalone Components, and Native Control Flow)
+- **SDK**: [AWS SDK for JavaScript v3](https://aws.amazon.com/sdk-for-javascript/)
+- **Editor**: [Monaco Editor](https://microsoft.github.io/monaco-editor/)
+- **Styling**: [Tailwind CSS v4](https://tailwindcss.com/)
+- **Testing**: [Vitest](https://vitest.dev/)
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- [Node.js](https://nodejs.org/) (latest LTS recommended)
+- [LocalStack](https://localstack.cloud/) running locally (e.g., via Docker)
+
+### Installation
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/vajahath/localstack-explorer.git
+   cd localstack-explorer
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Start the development server:
+   ```bash
+   npm start
+   ```
+
+4. Open your browser and navigate to `http://localhost:4200`.
+
+## ⚙️ Configuration
+
+When you first launch the app, use the **Setup Wizard** to configure:
+- **Endpoint**: Usually `http://localhost:4566` for LocalStack.
+- **Region**: Your default AWS region (e.g., `us-east-1`).
+- **Credentials**: Access Key and Secret Key (LocalStack usually accepts `test`/`test`).
+
+## 🧪 Development
+
+### Running Tests
+
+To execute unit tests with Vitest:
 ```bash
-ng serve
+npm test
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+### Building for Production
 
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
-
+To create a production-ready bundle:
 ```bash
-ng generate component component-name
+npm run build
 ```
+The artifacts will be stored in the `dist/` directory.
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+## 📄 License
 
-```bash
-ng generate --help
-```
-
-## Building
-
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+This project is licensed under the MIT License.
