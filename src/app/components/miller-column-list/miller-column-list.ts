@@ -197,8 +197,11 @@ export class MillerColumnListComponent implements OnInit, OnChanges {
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['bucket'] || changes['prefix']) {
-      // Reset only if bucket or prefix actually changed
-      if (!changes['bucket']?.isFirstChange() || !changes['prefix']?.isFirstChange()) {
+      // If bucket or prefix changed, and it's not the first change
+      const bucketChanged = changes['bucket'] && !changes['bucket'].isFirstChange();
+      const prefixChanged = changes['prefix'] && !changes['prefix'].isFirstChange();
+
+      if (bucketChanged || prefixChanged) {
         this.resetAndLoad();
       }
     }
@@ -213,7 +216,11 @@ export class MillerColumnListComponent implements OnInit, OnChanges {
   }
 
   async loadData() {
-    if (this.isLoading() || !this.hasMore || !this.bucket) return;
+    console.log(`[MillerColumnList] loadData for bucket: ${this.bucket}, prefix: ${this.prefix}`);
+    if (this.isLoading() || !this.hasMore || !this.bucket) {
+      console.log(`[MillerColumnList] loadData skipped: isLoading=${this.isLoading()}, hasMore=${this.hasMore}, bucket=${this.bucket}`);
+      return;
+    }
 
     this.isLoading.set(true);
     try {

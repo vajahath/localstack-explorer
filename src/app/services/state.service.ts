@@ -23,6 +23,8 @@ export class StateService {
       const bucket = this.selectedBucket();
       const parts = this.selectedPathParts();
 
+      console.log('[StateService] Effect running, syncing to URL', { endpoint, bucket, parts });
+
       const params: Record<string, string> = {};
       if (endpoint) params['endpoint'] = btoa(endpoint);
       if (bucket) params['bucket'] = bucket;
@@ -53,6 +55,7 @@ export class StateService {
 
   // This will be called on app load to restore state from URL
   syncFromUrl(bucket: string | null, prefix: string | null, endpoint: string | null) {
+    console.log('[StateService] syncFromUrl', { bucket, prefix, endpoint });
     // We update these only if they differ to avoid triggering the effect unnecessarily
     if (endpoint) {
       try {

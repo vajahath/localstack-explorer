@@ -1,4 +1,4 @@
-import { Component, effect, inject } from '@angular/core';
+import { Component, effect, inject, signal, ChangeDetectionStrategy, untracked } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { _Object, Bucket } from '@aws-sdk/client-s3';
 import { S3Service } from '../../services/s3.service';
@@ -12,6 +12,7 @@ import { DetailsPanelComponent } from '../details-panel/details-panel';
   selector: 'app-explorer',
   standalone: true,
   imports: [MillerColumnsComponent, DetailsPanelComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="h-screen flex flex-col bg-white font-sans text-gray-900 overflow-hidden dark:bg-slate-950 dark:text-slate-100">
       <!-- Header Area -->
@@ -27,15 +28,15 @@ import { DetailsPanelComponent } from '../details-panel/details-panel';
         </div>
 
         <div class="flex items-center gap-3">
-          @if (buckets.length > 0) {
+          @if (buckets().length > 0) {
             <div class="flex items-center gap-2">
               <span class="text-sm text-gray-500 dark:text-slate-400">Bucket:</span>
               <select
                 class="bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-48 p-2 py-1.5 outline-none dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300"
-                [value]="stateService.selectedBucket() || buckets[0].Name"
+                [value]="stateService.selectedBucket() || buckets()[0].Name"
                 (change)="onBucketSelect($event)"
               >
-                @for (bucket of buckets; track bucket.Name) {
+                @for (bucket of buckets(); track bucket.Name) {
                   <option [value]="bucket.Name">{{ bucket.Name }}</option>
                 }
               </select>
@@ -64,7 +65,7 @@ import { DetailsPanelComponent } from '../details-panel/details-panel';
             [file]="activeObject"
             [bucketName]="stateService.selectedBucket()!"
           ></app-details-panel>
-        } @else if (buckets.length === 0) {
+        } @else if (buckets().length === 0) {
           <div class="flex-1 flex flex-col items-center justify-center text-gray-400 dark:bg-slate-950">
             <div class="w-16 h-16 rounded-full bg-gray-50 flex items-center justify-center mb-4 dark:bg-slate-900 dark:border dark:border-slate-800">
               <svg
@@ -95,7 +96,7 @@ export class ExplorerComponent {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
 
-  buckets: Bucket[] = [];
+  buckets = signal<Bucket[]>([]);
   activeObject: _Object | null = null;
 
   private params = toSignal(this.route.params);
@@ -109,41 +110,51 @@ export class ExplorerComponent {
       const bucket = params['bucket'] || null;
       const prefix = params['prefix'] || null;
 
-      // If we have an endpoint in URL but not connected, connect now
-      if (endpoint && !this.stateService.isConnected()) {
-        try {
-          const decodedEndpoint = atob(endpoint);
-          this.s3Service.connect(decodedEndpoint);
-          this.stateService.isConnected.set(true);
-          this.stateService.endpoint.set(decodedEndpoint);
-        } catch (e) {
-          console.error('Failed to auto-connect from URL', e);
-          this.disconnect();
-          return;
-        }
-      }
+      console.log('[ExplorerComponent] Effect running', { endpoint, bucket, prefix });
 
-      this.stateService.syncFromUrl(bucket, prefix, endpoint);
+      untracked(() => {
+        // Ensure state is synced from URL first
+        this.stateService.syncFromUrl(bucket, prefix, endpoint);
+
+        // If we have an endpoint in URL but not connected, connect now
+        if (endpoint && !this.stateService.isConnected()) {
+          try {
+            const decodedEndpoint = atob(endpoint);
+            this.s3Service.connect(decodedEndpoint);
+            this.stateService.isConnected.set(true);
+            this.stateService.endpoint.set(decodedEndpoint);
+          } catch (e) {
+            console.error('Failed to auto-connect from URL', e);
+            this.disconnect();
+          }
+        }
+      });
 
       // Load buckets if connected and not already loaded
-      if (this.stateService.isConnected() && this.buckets.length === 0) {
+      // We use untracked here to prevent this effect from re-running when this.buckets() signal is updated,
+      // which was causing a race condition where syncFromUrl(null) would clear the auto-selected bucket.
+      if (untracked(() => this.stateService.isConnected() && this.buckets().length === 0)) {
         await this.loadBuckets();
       }
     });
   }
 
   private async loadBuckets() {
+    console.log('[ExplorerComponent] Loading buckets...');
     try {
-      this.buckets = await this.s3Service.listBuckets();
+      const fetchedBuckets = await this.s3Service.listBuckets();
+      console.log('[ExplorerComponent] Buckets fetched:', fetchedBuckets);
+      this.buckets.set(fetchedBuckets);
 
       // If we don't have a selected bucket from URL but we have buckets, pick the first one
-      if (!this.stateService.selectedBucket() && this.buckets.length > 0 && this.buckets[0].Name) {
-        this.stateService.navigateBucket(this.buckets[0].Name!);
+      if (!this.stateService.selectedBucket() && fetchedBuckets.length > 0 && fetchedBuckets[0].Name) {
+        console.log('[ExplorerComponent] Auto-selecting first bucket:', fetchedBuckets[0].Name);
+        this.stateService.navigateBucket(fetchedBuckets[0].Name!);
       }
     } catch (error) {
       console.error('Failed fetching buckets', error);
       // Only disconnect if it's a critical failure (e.g. initial load)
-      if (this.buckets.length === 0) {
+      if (this.buckets().length === 0) {
         this.disconnect();
       }
     }
