@@ -1,8 +1,5 @@
 import {
   Component,
-  Input,
-  Output,
-  EventEmitter,
   OnInit,
   ElementRef,
   ViewChild,
@@ -10,6 +7,12 @@ import {
   OnDestroy,
   ChangeDetectorRef,
   signal,
+  input,
+  output,
+  computed,
+  effect,
+  untracked,
+  ChangeDetectionStrategy,
 } from '@angular/core';
 import { _Object } from '@aws-sdk/client-s3';
 import { StateService } from '../../services/state.service';
@@ -19,6 +22,7 @@ import { MillerColumnListComponent } from '../miller-column-list/miller-column-l
   selector: 'app-miller-columns',
   standalone: true,
   imports: [MillerColumnListComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="flex-1 flex flex-col min-w-0 bg-gray-50 dark:bg-slate-950 overflow-hidden relative border-r border-gray-200 dark:border-slate-800">
       <!-- Workspace area with columns -->
@@ -29,26 +33,26 @@ import { MillerColumnListComponent } from '../miller-column-list/miller-column-l
       >
         <!-- Root Column -->
         <app-miller-column-list
-          [bucket]="bucket"
+          [bucket]="bucket()"
           prefix=""
           title="(root)"
-          [activeNextPrefix]="columns.length > 0 ? columns[0] : null"
-          [activeObject]="isRootObjectActive() ? activeObject : null"
-          [isLastColumn]="columns.length === 0"
+          [activeNextPrefix]="columns().length > 0 ? columns()[0] : null"
+          [activeObject]="isRootObjectActive() ? stateService.activeObject() : null"
+          [isLastColumn]="columns().length === 0"
           (folderSelected)="onPrefixSelected($event, 0)"
           (fileSelected)="onFileSelected($event, 0)"
         ></app-miller-column-list>
 
         <!-- Nested Columns -->
-        @for (col of columns; track col; let i = $index) {
+        @for (col of columns(); track col; let i = $index) {
           <app-miller-column-list
             animate.enter="column-slide-in"
-            [bucket]="bucket"
+            [bucket]="bucket()"
             [prefix]="col"
             [title]="getFolderName(col)"
-            [activeNextPrefix]="columns.length > i + 1 ? columns[i + 1] : null"
-            [activeObject]="isObjectActiveInColumn(col) ? activeObject : null"
-            [isLastColumn]="i === columns.length - 1"
+            [activeNextPrefix]="columns().length > i + 1 ? columns()[i + 1] : null"
+            [activeObject]="isObjectActiveInColumn(col) ? stateService.activeObject() : null"
+            [isLastColumn]="i === columns().length - 1"
             (folderSelected)="onPrefixSelected($event, i + 1)"
             (fileSelected)="onFileSelected($event, i + 1)"
           ></app-miller-column-list>
@@ -65,7 +69,7 @@ import { MillerColumnListComponent } from '../miller-column-list/miller-column-l
                 (click)="navigateToDepth(-1)"
                 class="hover:text-blue-500 hover:bg-blue-50 px-1.5 py-0.5 rounded transition-all cursor-pointer shrink-0 dark:hover:bg-blue-900/30 dark:hover:text-blue-400"
              >
-                {{ bucket }}
+                {{ bucket() }}
              </button>
              
              @for (part of stateService.selectedPathParts(); track part; let i = $index) {
@@ -79,9 +83,9 @@ import { MillerColumnListComponent } from '../miller-column-list/miller-column-l
                 </button>
              }
 
-             @if (activeObject) {
+             @if (stateService.activeObject()) {
                <span class="text-gray-300 shrink-0 dark:text-slate-700">/</span>
-               <span class="text-blue-600 font-bold px-1.5 py-0.5 truncate max-w-[200px] dark:text-blue-400">{{ getFileName(activeObject.Key!) }}</span>
+               <span class="text-blue-600 font-bold px-1.5 py-0.5 truncate max-w-[200px] dark:text-blue-400">{{ getFileName(stateService.activeObject()?.Key ?? '') }}</span>
              }
         </div>
       </div>
@@ -148,8 +152,7 @@ import { MillerColumnListComponent } from '../miller-column-list/miller-column-l
   ],
 })
 export class MillerColumnsComponent implements OnInit, OnDestroy {
-  @Input({ required: true }) bucket!: string;
-  @Output() fileSelected = new EventEmitter<_Object | null>();
+  bucket = input.required<string>();
 
   protected stateService = inject(StateService);
   private cdr = inject(ChangeDetectorRef);
@@ -157,8 +160,17 @@ export class MillerColumnsComponent implements OnInit, OnDestroy {
   @ViewChild('scrollContainer') scrollContainer!: ElementRef<HTMLElement>;
   @ViewChild('manualScrollbar') manualScrollbar!: ElementRef<HTMLElement>;
 
-  columns: string[] = [];
-  activeObject: _Object | null = null;
+  columns = computed(() => {
+    const parts = this.stateService.selectedPathParts();
+    const cols: string[] = [];
+    let currentPrefix = '';
+    for (const part of parts) {
+      currentPrefix += part + '/';
+      cols.push(currentPrefix);
+    }
+    return cols;
+  });
+
   scrollWidth = signal(0);
 
   private resizeObserver: ResizeObserver | null = null;
@@ -166,8 +178,21 @@ export class MillerColumnsComponent implements OnInit, OnDestroy {
   private shouldScrollToRight = false;
   private isSyncingScroll = false;
 
+  constructor() {
+    effect(() => {
+      // Sync on bucket change or path parts change
+      this.bucket();
+      this.stateService.selectedPathParts();
+
+      untracked(() => {
+        this.shouldScrollToRight = true;
+        // Trigger update for navigation path changes
+        setTimeout(() => this.updateScrollWidth(), 0);
+      });
+    });
+  }
+
   ngOnInit() {
-    this.syncWithState();
     this.initObservers();
   }
 
@@ -223,63 +248,39 @@ export class MillerColumnsComponent implements OnInit, OnDestroy {
     }
   }
 
-  private syncWithState() {
-    const parts = this.stateService.selectedPathParts();
-    const newColumns: string[] = [];
-    let currentPrefix = '';
-    for (const part of parts) {
-      currentPrefix += part + '/';
-      newColumns.push(currentPrefix);
-    }
-    this.columns = newColumns;
-
-    this.activeObject = null;
-    this.fileSelected.emit(null);
-
-    this.shouldScrollToRight = true;
-
-    // Trigger update for navigation path changes
-    setTimeout(() => this.updateScrollWidth(), 0);
-  }
-
   onPrefixSelected(prefix: string, depth: number) {
-    const parts = prefix.split('/');
-    if (parts.length > 0 && parts[parts.length - 1] === '') {
-      parts.pop();
-    }
-
+    const parts = prefix.split('/').filter((p) => p !== '');
     this.stateService.navigatePath(parts);
-    this.syncWithState();
+    this.stateService.activeObject.set(null);
   }
 
   onFileSelected(file: _Object, depth: number) {
-    this.activeObject = file;
-    this.columns = this.columns.slice(0, depth);
+    this.stateService.activeObject.set(file);
     const parts = this.stateService.selectedPathParts().slice(0, depth);
 
     setTimeout(() => {
       this.stateService.navigatePath(parts);
       this.updateScrollWidth();
     }, 0);
-
-    this.fileSelected.emit(file);
   }
 
   navigateToDepth(depth: number) {
     const parts = this.stateService.selectedPathParts().slice(0, depth + 1);
     this.stateService.navigatePath(parts);
-    this.syncWithState();
+    this.stateService.activeObject.set(null);
   }
 
   isRootObjectActive(): boolean {
-    if (!this.activeObject?.Key) return false;
-    return !this.activeObject.Key.includes('/');
+    const active = this.stateService.activeObject();
+    if (!active?.Key) return false;
+    return !active.Key.includes('/');
   }
 
   isObjectActiveInColumn(columnPrefix: string): boolean {
-    if (!this.activeObject?.Key) return false;
-    if (!this.activeObject.Key.startsWith(columnPrefix)) return false;
-    const remainder = this.activeObject.Key.substring(columnPrefix.length);
+    const active = this.stateService.activeObject();
+    if (!active?.Key) return false;
+    if (!active.Key.startsWith(columnPrefix)) return false;
+    const remainder = active.Key.substring(columnPrefix.length);
     return !remainder.includes('/');
   }
 

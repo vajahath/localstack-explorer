@@ -58,11 +58,10 @@ import { DetailsPanelComponent } from '../details-panel/details-panel';
           <app-miller-columns
             class="flex-1 flex overflow-hidden border-r border-gray-200 dark:border-slate-800"
             [bucket]="stateService.selectedBucket()!"
-            (fileSelected)="onFileSelected($event)"
           ></app-miller-columns>
 
           <app-details-panel
-            [file]="activeObject"
+            [file]="stateService.activeObject()"
             [bucketName]="stateService.selectedBucket()!"
           ></app-details-panel>
         } @else if (buckets().length === 0) {
@@ -97,7 +96,6 @@ export class ExplorerComponent {
   private route = inject(ActivatedRoute);
 
   buckets = signal<Bucket[]>([]);
-  activeObject: _Object | null = null;
 
   private params = toSignal(this.route.params);
 
@@ -163,11 +161,6 @@ export class ExplorerComponent {
   onBucketSelect(event: Event) {
     const bucket = (event.target as HTMLSelectElement).value;
     this.stateService.navigateBucket(bucket);
-    this.activeObject = null;
-  }
-
-  onFileSelected(file: _Object | null) {
-    this.activeObject = file;
   }
 
   disconnect() {

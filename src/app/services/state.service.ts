@@ -1,5 +1,6 @@
 import { Injectable, computed, signal, inject, effect } from '@angular/core';
-import { Router, ActivatedRoute } from '@angular/router';
+import { Router } from '@angular/router';
+import { _Object } from '@aws-sdk/client-s3';
 
 @Injectable({
   providedIn: 'root',
@@ -12,6 +13,7 @@ export class StateService {
   readonly endpoint = signal<string | null>(null);
   readonly selectedBucket = signal<string | null>(null);
   readonly selectedPathParts = signal<string[]>([]);
+  readonly activeObject = signal<_Object | null>(null);
 
   constructor() {
     // Keep URL in sync with state
@@ -47,6 +49,7 @@ export class StateService {
   navigateBucket(bucket: string) {
     this.selectedBucket.set(bucket);
     this.selectedPathParts.set([]);
+    this.activeObject.set(null);
   }
 
   navigatePath(parts: string[]) {

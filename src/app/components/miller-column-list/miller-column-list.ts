@@ -1,13 +1,12 @@
 import {
   Component,
-  Input,
-  Output,
-  EventEmitter,
-  OnInit,
-  OnChanges,
-  SimpleChanges,
   inject,
   signal,
+  input,
+  output,
+  effect,
+  untracked,
+  ChangeDetectionStrategy,
 } from '@angular/core';
 import { CommonPrefix, _Object } from '@aws-sdk/client-s3';
 import { S3Service, S3ListResult } from '../../services/s3.service';
@@ -15,20 +14,21 @@ import { S3Service, S3ListResult } from '../../services/s3.service';
 @Component({
   selector: 'app-miller-column-list',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div 
       class="h-full w-64 border-r border-gray-200 flex flex-col font-sans shrink-0 transition-all duration-300 dark:border-slate-800"
-      [class.bg-white]="!isLastColumn"
-      [class.dark:bg-slate-950]="!isLastColumn"
-      [class.bg-indigo-50/30]="isLastColumn"
-      [class.dark:bg-slate-900]="isLastColumn"
-      [class.shadow-inner]="isLastColumn"
+      [class.bg-white]="!isLastColumn()"
+      [class.dark:bg-slate-950]="!isLastColumn()"
+      [class.bg-indigo-50/30]="isLastColumn()"
+      [class.dark:bg-slate-900]="isLastColumn()"
+      [class.shadow-inner]="isLastColumn()"
     >
       <!-- Column Header -->
-      @if (title) {
+      @if (title()) {
         <div class="px-3 py-2 border-b border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-900/50 shrink-0">
           <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider dark:text-slate-500">
-            {{ title }}
+            {{ title() }}
           </span>
         </div>
       }
@@ -61,27 +61,27 @@ import { S3Service, S3ListResult } from '../../services/s3.service';
             <li>
               <button
                 (click)="onFolderClick(folder)"
-                [class.bg-blue-600]="isSelectedFolder(folder.Prefix!) && isLastColumn"
-                [class.text-white]="isSelectedFolder(folder.Prefix!) && isLastColumn"
-                [class.bg-blue-100/50]="isSelectedFolder(folder.Prefix!) && !isLastColumn"
-                [class.text-blue-700]="isSelectedFolder(folder.Prefix!) && !isLastColumn"
-                [class.dark:bg-indigo-900/40]="isSelectedFolder(folder.Prefix!) && !isLastColumn"
-                [class.dark:text-indigo-300]="isSelectedFolder(folder.Prefix!) && !isLastColumn"
-                [class.font-bold]="isSelectedFolder(folder.Prefix!) && isLastColumn"
+                [class.bg-blue-600]="isSelectedFolder(folder.Prefix!) && isLastColumn()"
+                [class.text-white]="isSelectedFolder(folder.Prefix!) && isLastColumn()"
+                [class.bg-blue-100/50]="isSelectedFolder(folder.Prefix!) && !isLastColumn()"
+                [class.text-blue-700]="isSelectedFolder(folder.Prefix!) && !isLastColumn()"
+                [class.dark:bg-indigo-900/40]="isSelectedFolder(folder.Prefix!) && !isLastColumn()"
+                [class.dark:text-indigo-300]="isSelectedFolder(folder.Prefix!) && !isLastColumn()"
+                [class.font-bold]="isSelectedFolder(folder.Prefix!) && isLastColumn()"
                 [class.hover:bg-gray-100]="!isSelectedFolder(folder.Prefix!)"
                 [class.dark:hover:bg-slate-800/50]="!isSelectedFolder(folder.Prefix!)"
                 [class.text-gray-700]="!isSelectedFolder(folder.Prefix!)"
                 [class.dark:text-slate-400]="!isSelectedFolder(folder.Prefix!)"
                 class="w-full text-left px-3 py-2 text-sm flex items-center justify-between group outline-none cursor-pointer transition-all border-l-2"
-                [class.border-indigo-600]="isSelectedFolder(folder.Prefix!) && isLastColumn"
-                [class.border-transparent]="!isSelectedFolder(folder.Prefix!) || !isLastColumn"
+                [class.border-indigo-600]="isSelectedFolder(folder.Prefix!) && isLastColumn()"
+                [class.border-transparent]="!isSelectedFolder(folder.Prefix!) || !isLastColumn()"
               >
                 <div class="flex items-center gap-2 truncate">
-                  <!-- Folder Icon -->
+                   <!-- Folder Icon -->
                   <svg
-                    [class.text-blue-200]="isSelectedFolder(folder.Prefix!) && isLastColumn"
-                    [class.text-blue-500]="!isSelectedFolder(folder.Prefix!) || !isLastColumn"
-                    [class.dark:text-blue-400]="!isSelectedFolder(folder.Prefix!) || !isLastColumn"
+                    [class.text-blue-200]="isSelectedFolder(folder.Prefix!) && isLastColumn()"
+                    [class.text-blue-500]="!isSelectedFolder(folder.Prefix!) || !isLastColumn()"
+                    [class.dark:text-blue-400]="!isSelectedFolder(folder.Prefix!) || !isLastColumn()"
                     class="w-4 h-4 shrink-0 transition-colors"
                     fill="none"
                     stroke="currentColor"
@@ -120,28 +120,28 @@ import { S3Service, S3ListResult } from '../../services/s3.service';
             <li>
               <button
                 (click)="onFileClick(file)"
-                [class.bg-blue-600]="activeObject?.Key === file.Key && isLastColumn"
-                [class.text-white]="activeObject?.Key === file.Key && isLastColumn"
-                [class.bg-blue-100/50]="activeObject?.Key === file.Key && !isLastColumn"
-                [class.text-blue-700]="activeObject?.Key === file.Key && !isLastColumn"
-                [class.dark:bg-indigo-900/40]="activeObject?.Key === file.Key && !isLastColumn"
-                [class.dark:text-indigo-300]="activeObject?.Key === file.Key && !isLastColumn"
-                [class.font-bold]="activeObject?.Key === file.Key && isLastColumn"
-                [class.hover:bg-gray-100]="activeObject?.Key !== file.Key"
-                [class.dark:hover:bg-slate-800/50]="activeObject?.Key !== file.Key"
-                [class.text-gray-700]="activeObject?.Key !== file.Key"
-                [class.dark:text-slate-400]="activeObject?.Key !== file.Key"
+                [class.bg-blue-600]="activeObject()?.Key === file.Key && isLastColumn()"
+                [class.text-white]="activeObject()?.Key === file.Key && isLastColumn()"
+                [class.bg-blue-100/50]="activeObject()?.Key === file.Key && !isLastColumn()"
+                [class.text-blue-700]="activeObject()?.Key === file.Key && !isLastColumn()"
+                [class.dark:bg-indigo-900/40]="activeObject()?.Key === file.Key && !isLastColumn()"
+                [class.dark:text-indigo-300]="activeObject()?.Key === file.Key && !isLastColumn()"
+                [class.font-bold]="activeObject()?.Key === file.Key && isLastColumn()"
+                [class.hover:bg-gray-100]="activeObject()?.Key !== file.Key"
+                [class.dark:hover:bg-slate-800/50]="activeObject()?.Key !== file.Key"
+                [class.text-gray-700]="activeObject()?.Key !== file.Key"
+                [class.dark:text-slate-400]="activeObject()?.Key !== file.Key"
                 class="w-full text-left px-3 py-2 text-sm flex items-center gap-2 outline-none cursor-pointer transition-all border-l-2"
-                [class.border-indigo-600]="activeObject?.Key === file.Key && isLastColumn"
-                [class.border-transparent]="activeObject?.Key !== file.Key || !isLastColumn"
+                [class.border-indigo-600]="activeObject()?.Key === file.Key && isLastColumn()"
+                [class.border-transparent]="activeObject()?.Key !== file.Key || !isLastColumn()"
               >
                 <!-- File Icon -->
                 <svg
-                  [class.text-blue-200]="activeObject?.Key === file.Key && isLastColumn"
-                  [class.text-gray-400]="activeObject?.Key !== file.Key"
-                  [class.dark:text-slate-500]="activeObject?.Key !== file.Key"
-                  [class.text-blue-500]="activeObject?.Key === file.Key && !isLastColumn"
-                  [class.dark:text-blue-400]="activeObject?.Key === file.Key && !isLastColumn"
+                  [class.text-blue-200]="activeObject()?.Key === file.Key && isLastColumn()"
+                  [class.text-gray-400]="activeObject()?.Key !== file.Key"
+                  [class.dark:text-slate-500]="activeObject()?.Key !== file.Key"
+                  [class.text-blue-500]="activeObject()?.Key === file.Key && !isLastColumn()"
+                  [class.dark:text-blue-400]="activeObject()?.Key === file.Key && !isLastColumn()"
                   class="w-4 h-4 shrink-0 transition-colors"
                   fill="none"
                   stroke="currentColor"
@@ -170,17 +170,16 @@ import { S3Service, S3ListResult } from '../../services/s3.service';
     </div>
   `,
 })
-export class MillerColumnListComponent implements OnInit, OnChanges {
-  @Input({ required: true }) bucket!: string;
-  @Input() prefix = '';
-  @Input() title?: string;
-  @Input() activeNextPrefix: string | null = null;
-  @Input() activeObject: _Object | null = null;
+export class MillerColumnListComponent {
+  bucket = input.required<string>();
+  prefix = input<string>('');
+  title = input<string>();
+  activeNextPrefix = input<string | null>(null);
+  activeObject = input<_Object | null>(null);
+  isLastColumn = input<boolean>(false);
 
-  @Input() isLastColumn = false;
-
-  @Output() folderSelected = new EventEmitter<string>();
-  @Output() fileSelected = new EventEmitter<_Object>();
+  folderSelected = output<string>();
+  fileSelected = output<_Object>();
 
   private s3Service = inject(S3Service);
 
@@ -191,20 +190,16 @@ export class MillerColumnListComponent implements OnInit, OnChanges {
   private nextToken: string | undefined = undefined;
   private hasMore = true;
 
-  ngOnInit() {
-    this.loadData();
-  }
+  constructor() {
+    effect(() => {
+      // Re-load data when bucket or prefix changes
+      this.bucket();
+      this.prefix();
 
-  ngOnChanges(changes: SimpleChanges) {
-    if (changes['bucket'] || changes['prefix']) {
-      // If bucket or prefix changed, and it's not the first change
-      const bucketChanged = changes['bucket'] && !changes['bucket'].isFirstChange();
-      const prefixChanged = changes['prefix'] && !changes['prefix'].isFirstChange();
-
-      if (bucketChanged || prefixChanged) {
+      untracked(() => {
         this.resetAndLoad();
-      }
-    }
+      });
+    });
   }
 
   private resetAndLoad() {
@@ -216,17 +211,19 @@ export class MillerColumnListComponent implements OnInit, OnChanges {
   }
 
   async loadData() {
-    console.log(`[MillerColumnList] loadData for bucket: ${this.bucket}, prefix: ${this.prefix}`);
-    if (this.isLoading() || !this.hasMore || !this.bucket) {
-      console.log(`[MillerColumnList] loadData skipped: isLoading=${this.isLoading()}, hasMore=${this.hasMore}, bucket=${this.bucket}`);
+    const bucket = this.bucket();
+    const prefix = this.prefix();
+
+    console.log(`[MillerColumnList] loadData for bucket: ${bucket}, prefix: ${prefix}`);
+    if (this.isLoading() || !this.hasMore || !bucket) {
       return;
     }
 
     this.isLoading.set(true);
     try {
       const result: S3ListResult = await this.s3Service.listObjects(
-        this.bucket,
-        this.prefix,
+        bucket,
+        prefix,
         this.nextToken,
       );
 
@@ -252,9 +249,7 @@ export class MillerColumnListComponent implements OnInit, OnChanges {
 
   getFolderName(fullPrefix: string): string {
     const parts = fullPrefix.split('/');
-    // Check for folder representation (ends with /)
     if (parts.length > 1 && parts[parts.length - 1] === '') {
-      // Return the named part, or "/" for the special case where prefix is exactly "/"
       return parts[parts.length - 2] || '/';
     }
     return parts[parts.length - 1];
@@ -266,7 +261,7 @@ export class MillerColumnListComponent implements OnInit, OnChanges {
   }
 
   isSelectedFolder(folderPrefix: string): boolean {
-    return this.activeNextPrefix === folderPrefix;
+    return this.activeNextPrefix() === folderPrefix;
   }
 
   onFolderClick(folder: CommonPrefix) {
