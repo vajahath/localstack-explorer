@@ -1,8 +1,17 @@
 # LocalStack Explorer
 
-A modern, fast, and fully client-side UI for exploring LocalStack S3 buckets. Built with Angular and inspired by the macOS Finder's Miller column layout.
+A modern, fast, and **privacy-focused** client-side UI for exploring LocalStack S3 buckets.
 
-![LocalStack Explorer Mockup](https://raw.githubusercontent.com/vajahath/localstack-explorer/main/screenshot.png) *(Note: Placeholder for actual screenshot)*
+Use app here: [vajahath.github.io/localstack-explorer](https://vajahath.github.io/localstack-explorer/)
+
+![Demo](ui.webp)
+
+## 🔒 Privacy & Security First
+
+- **Offline & Serverless**: This application runs entirely in your browser. There is no middleman or backend server collecting your data.
+- **Local Data Only**: All communication happens directly between your browser and your LocalStack endpoint (usually `localhost`).
+- **No Data Leakage**: Your AWS credentials, bucket names, and file contents **never leave your system**.
+- **Transparency**: Fully open-source and client-side, allowing you to audit how your data is handled.
 
 ## ✨ Features
 
