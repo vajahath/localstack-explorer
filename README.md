@@ -1,4 +1,4 @@
-# LocalStack Explorer
+# LocalStack Explorer [![Build and Deploy to GitHub Pages](https://github.com/vajahath/localstack-explorer/actions/workflows/deploy.yml/badge.svg)](https://github.com/vajahath/localstack-explorer/actions/workflows/deploy.yml) 
 
 A modern, fast, and **privacy-focused** client-side UI for exploring LocalStack S3 buckets.
 
@@ -15,14 +15,15 @@ Use app here: [vajahath.github.io/localstack-explorer](https://vajahath.github.i
 
 ## ✨ Features
 
-- **Miller Column Navigation**: Intuitive multi-column layout for navigating through deeply nested S3 folders and objects.
-- **100% Client-Side**: Runs entirely in your browser. No server-side component needed beyond your LocalStack instance.
-- **S3 Object Management**: Browse buckets, list objects, and view detailed metadata with **Pagination Support** for large directories.
-- **Code Previews**: Integrated [Monaco Editor](https://microsoft.github.io/monaco-editor/) for high-quality syntax highlighting.
-- **Smart Previews**: Automatically handles **GZIP decompression** in a background web worker for compressed log files or data.
-- **Setup Wizard**: Easy configuration to connect to your local or remote LocalStack instance.
-- **Modern UI/UX**: Built with a "premium" feel, featuring dark mode support and smooth transitions.
-- **High Performance**: Leverages Angular Signals for efficient change detection and reactive state management.
+- 📁 **Miller Column Navigation**: Intuitive multi-column layout for navigating through deeply nested S3 folders and objects.
+- 🛡️ **100% Client-Side**: Runs entirely in your browser. No server-side component needed beyond your LocalStack instance.
+- 📦 **S3 Object Management**: Browse buckets, list objects, and view detailed metadata with **Pagination Support** for large directories.
+- 🏷️ **Custom Metadata Editing**: Easily view, add, edit, and delete custom S3 object metadata via a fast, reactive inline editor.
+- 💻 **Code Previews**: Integrated [Monaco Editor](https://microsoft.github.io/monaco-editor/) for high-quality syntax highlighting.
+- 🗜️ **Smart Previews**: Automatically handles **GZIP decompression** in a background web worker for compressed log files or data.
+- 🧙 **Setup Wizard**: Easy configuration to connect to your local or remote LocalStack instance.
+- 🎨 **Modern UI/UX**: Built with a "premium" feel, featuring dark mode support and smooth transitions.
+- ⚡ **High Performance**: Leverages Angular Signals for efficient change detection and reactive state management.
 
 ## 🛠️ Tech Stack
 
@@ -34,12 +35,12 @@ Use app here: [vajahath.github.io/localstack-explorer](https://vajahath.github.i
 
 ## 🚀 Getting Started
 
-### Prerequisites
+### 📋 Prerequisites
 
 - [Node.js](https://nodejs.org/) (latest LTS recommended)
 - [LocalStack](https://localstack.cloud/) running locally (e.g., via Docker)
 
-### Installation
+### 💻 Installation
 
 1. Clone the repository:
    ```bash
@@ -68,14 +69,14 @@ When you first launch the app, use the **Setup Wizard** to configure:
 
 ## 🧪 Development
 
-### Running Tests
+### 🏃 Running Tests
 
 To execute unit tests with Vitest:
 ```bash
 npm test
 ```
 
-### Building for Production
+### 🏗️ Building for Production
 
 To create a production-ready bundle:
 ```bash
