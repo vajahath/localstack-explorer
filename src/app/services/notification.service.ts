@@ -7,6 +7,7 @@ export interface Notification {
     type: NotificationType;
     message: string;
     title?: string;
+    position?: 'right' | 'left';
 }
 
 @Injectable({
@@ -16,9 +17,9 @@ export class NotificationService {
     private nextId = 0;
     readonly notifications = signal<Notification[]>([]);
 
-    show(message: string, type: NotificationType = 'info', title?: string) {
+    show(message: string, type: NotificationType = 'info', title?: string, position: 'right' | 'left' = 'right') {
         const id = this.nextId++;
-        const notification: Notification = { id, type, message, title };
+        const notification: Notification = { id, type, message, title, position };
 
         this.notifications.update((items) => [...items, notification]);
 

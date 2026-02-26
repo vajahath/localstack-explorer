@@ -30,7 +30,7 @@
     "@angular/forms": "^21.1.0",
     "@angular/platform-browser": "^21.1.0",
     "@angular/router": "^21.1.0",
-    "@aws-sdk/client-s3": "^3.997.0",
+    "@aws-sdk/client-s3": "^3.998.0",
     "@monaco-editor/loader": "^1.7.0",
     "monaco-editor": "^0.55.1",
     "rxjs": "~7.8.0",

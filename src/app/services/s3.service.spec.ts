@@ -21,6 +21,8 @@ vi.mock('@aws-sdk/client-s3', () => {
         ListBucketsCommand: MockCommand,
         ListObjectsV2Command: MockCommand,
         GetObjectCommand: MockCommand,
+        HeadObjectCommand: MockCommand,
+        CopyObjectCommand: MockCommand,
     };
 });
 

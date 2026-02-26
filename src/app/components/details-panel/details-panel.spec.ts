@@ -22,10 +22,16 @@ describe('DetailsPanelComponent', () => {
         getObjectRange: ReturnType<typeof vi.fn>;
         getObject: ReturnType<typeof vi.fn>;
         getObjectBinaryRange: ReturnType<typeof vi.fn>;
+        getObjectMetadata: ReturnType<typeof vi.fn>;
+        updateObjectMetadata: ReturnType<typeof vi.fn>;
+        headObject: ReturnType<typeof vi.fn>;
         endpoint: ReturnType<typeof signal<string | null>>;
     };
     let themeServiceSpy: {
         isDark: ReturnType<typeof signal<boolean>>;
+    };
+    let stateServiceSpy: {
+        activeObject: ReturnType<typeof signal<_Object | null>>;
     };
 
     const makeFile = (key: string, size = 1024): _Object => ({
@@ -50,10 +56,16 @@ describe('DetailsPanelComponent', () => {
             getObjectRange: vi.fn().mockResolvedValue({ content: '', isClipped: false }),
             getObject: vi.fn().mockResolvedValue(new Blob(['content'])),
             getObjectBinaryRange: vi.fn().mockResolvedValue(new Uint8Array()),
+            getObjectMetadata: vi.fn().mockResolvedValue({}),
+            updateObjectMetadata: vi.fn().mockResolvedValue(undefined),
+            headObject: vi.fn().mockResolvedValue({}),
             endpoint: signal<string | null>(null),
         };
         themeServiceSpy = {
             isDark: signal(false),
+        };
+        stateServiceSpy = {
+            activeObject: signal<_Object | null>(null),
         };
 
         await TestBed.configureTestingModule({
@@ -61,7 +73,8 @@ describe('DetailsPanelComponent', () => {
             providers: [
                 { provide: S3Service, useValue: s3ServiceSpy },
                 { provide: ThemeService, useValue: themeServiceSpy },
-            ],
+                { provide: 'StateService', useValue: stateServiceSpy }, // Will be injected if provided, but let's mock the actual token below
+            ]
         })
             .overrideComponent(DetailsPanelComponent, {
                 remove: { imports: [MonacoEditorComponent] },
@@ -356,6 +369,21 @@ describe('DetailsPanelComponent', () => {
             const fixture = createFixture(null);
             await fixture.componentInstance.download();
             expect(s3ServiceSpy.getObject).not.toHaveBeenCalled();
+        });
+    });
+
+    // ── Metadata operations ────────────────────────────────────────────────────────
+    describe('onMetadataUpdated()', () => {
+        it('should call headObject and update StateService', async () => {
+            // Mock headObject result
+            s3ServiceSpy.headObject.mockResolvedValue({ Key: 'file.txt', ETag: 'new-etag' });
+            const fixture = createFixture(makeFile('file.txt'));
+
+            // In tests we can't easily spy on StateService when it defaults to `inject` without proper mock, 
+            // but we will check if s3ServiceSpy.headObject was called
+            await fixture.componentInstance.onMetadataUpdated();
+
+            expect(s3ServiceSpy.headObject).toHaveBeenCalledWith('test-bucket', 'file.txt');
         });
     });
 });

@@ -5,6 +5,8 @@ import {
   ListBucketsCommand,
   ListObjectsV2Command,
   GetObjectCommand,
+  HeadObjectCommand,
+  CopyObjectCommand,
   CommonPrefix,
   _Object,
 } from '@aws-sdk/client-s3';
@@ -155,5 +157,56 @@ export class S3Service {
     } catch (error) {
       this.handleError(error, 'Loading Binary Content');
     }
+  }
+
+  async getObjectMetadata(bucket: string, key: string): Promise<Record<string, string>> {
+    if (!this.client) throw new Error('S3 Client not connected');
+    try {
+      const command = new HeadObjectCommand({ Bucket: bucket, Key: key });
+      const response = await this.client.send(command);
+      return response.Metadata || {};
+    } catch (error) {
+      this.handleError(error, 'Fetching Metadata');
+    }
+  }
+
+  async headObject(bucket: string, key: string): Promise<_Object> {
+    if (!this.client) throw new Error('S3 Client not connected');
+    try {
+      const command = new HeadObjectCommand({ Bucket: bucket, Key: key });
+      const response = await this.client.send(command);
+      return {
+        Key: key,
+        LastModified: response.LastModified,
+        ETag: response.ETag,
+        Size: response.ContentLength,
+        StorageClass: response.StorageClass as any,
+      };
+    } catch (error) {
+      this.handleError(error, 'Fetching Object Info');
+    }
+  }
+
+  async updateObjectMetadata(bucket: string, key: string, metadata: Record<string, string>, silent: boolean = false) {
+    if (!this.client) throw new Error('S3 Client not connected');
+    try {
+      const command = new CopyObjectCommand({
+        Bucket: bucket,
+        CopySource: `${encodeURIComponent(bucket)}/${encodeURIComponent(key).replace(/%2F/g, '/')}`,
+        Key: key,
+        Metadata: metadata,
+        MetadataDirective: 'REPLACE',
+      });
+      await this.client.send(command);
+      if (!silent) {
+        this.notificationService.success('Metadata updated successfully', 'Metadata');
+      }
+    } catch (error) {
+      this.handleError(error, 'Updating Metadata');
+    }
+  }
+
+  async updateObjectMetadataSilent(bucket: string, key: string, metadata: Record<string, string>) {
+    return this.updateObjectMetadata(bucket, key, metadata, true);
   }
 }

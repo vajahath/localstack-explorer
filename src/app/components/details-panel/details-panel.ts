@@ -1,14 +1,16 @@
-import { Component, OnDestroy, inject, input, signal, effect } from '@angular/core';
+import { Component, OnDestroy, inject, input, signal, effect, computed } from '@angular/core';
 import { _Object } from '@aws-sdk/client-s3';
 import { DatePipe, SlicePipe } from '@angular/common';
 import { S3Service } from '../../services/s3.service';
 import { ThemeService } from '../../services/theme.service';
 import { MonacoEditorComponent } from '../monaco-editor/monaco-editor';
+import { ObjectMetadataEditorComponent } from '../object-metadata-editor/object-metadata-editor';
+import { StateService } from '../../services/state.service';
 
 @Component({
   selector: 'app-details-panel',
   standalone: true,
-  imports: [DatePipe, SlicePipe, MonacoEditorComponent],
+  imports: [DatePipe, SlicePipe, MonacoEditorComponent, ObjectMetadataEditorComponent],
   template: `
     <div
       class="h-full bg-white border-l border-gray-200 flex flex-col w-144 font-sans transition-all duration-300 shadow-xl overflow-hidden dark:bg-slate-950 dark:border-slate-800"
@@ -140,7 +142,13 @@ import { MonacoEditorComponent } from '../monaco-editor/monaco-editor';
               </button>
             </div>
 
-            <div class="space-y-3">
+            <app-object-metadata-editor
+              [bucketName]="bucketName()"
+              [objectKey]="file()!.Key!"
+              (metadataUpdated)="onMetadataUpdated()"
+            ></app-object-metadata-editor>
+
+            <div class="space-y-3 pt-4">
               <h4 class="text-[10px] font-bold text-gray-400 uppercase tracking-[0.15em] px-1 dark:text-slate-500">Detailed Properties</h4>
               <div class="bg-gray-50/50 border border-gray-100 rounded-xl overflow-hidden shadow-sm dark:bg-slate-900/40 dark:border-slate-800">
                 <div class="grid grid-cols-1 divide-y divide-gray-100 dark:divide-slate-800">
@@ -168,6 +176,7 @@ import { MonacoEditorComponent } from '../monaco-editor/monaco-editor';
               </div>
             </div>
           </div>
+
         </div>
       } @else {
         <div class="flex-1 flex flex-col items-center justify-center p-12 text-gray-300 bg-gray-50 dark:bg-slate-950 dark:text-slate-700">
@@ -193,6 +202,8 @@ export class DetailsPanelComponent implements OnDestroy {
 
   private s3Service = inject(S3Service);
   protected themeService = inject(ThemeService);
+
+  private stateService = inject(StateService);
 
   copySuccess = signal(false);
   isDownloading = signal(false);
@@ -380,6 +391,19 @@ export class DetailsPanelComponent implements OnDestroy {
       // Editor will update via effect
     } catch (e) {
       console.warn('Content is not valid JSON, cannot format', e);
+    }
+  }
+
+  async onMetadataUpdated() {
+    const bucket = this.bucketName();
+    const key = this.file()?.Key;
+    if (!bucket || !key) return;
+
+    try {
+      const updatedObject = await this.s3Service.headObject(bucket, key);
+      this.stateService.activeObject.set(updatedObject);
+    } catch (err) {
+      console.error('Failed to sync updated object metadata', err);
     }
   }
 }
