@@ -7,8 +7,14 @@ import {
   GetObjectCommand,
   HeadObjectCommand,
   CopyObjectCommand,
+  PutObjectCommand,
+  CreateMultipartUploadCommand,
+  UploadPartCommand,
+  CompleteMultipartUploadCommand,
+  AbortMultipartUploadCommand,
   CommonPrefix,
   _Object,
+  CompletedPart,
 } from '@aws-sdk/client-s3';
 
 export interface S3ListResult {
@@ -16,6 +22,14 @@ export interface S3ListResult {
   objects: _Object[];
   nextContinuationToken?: string;
 }
+
+/** Progress callback: 0 to 1 */
+export type UploadProgressCallback = (progress: number) => void;
+
+/** Multipart threshold and chunk size */
+const MULTIPART_THRESHOLD = 20 * 1024 * 1024; // 20 MB
+const CHUNK_SIZE = 10 * 1024 * 1024; // 10 MB
+const MAX_CONCURRENT_PARTS = 3;
 
 @Injectable({
   providedIn: 'root',
@@ -208,5 +222,131 @@ export class S3Service {
 
   async updateObjectMetadataSilent(bucket: string, key: string, metadata: Record<string, string>) {
     return this.updateObjectMetadata(bucket, key, metadata, true);
+  }
+
+  async createFolder(bucket: string, prefix: string, folderName: string) {
+    if (!this.client) throw new Error('S3 Client not connected');
+    try {
+      // S3 folders are just objects with a trailing slash
+      const key = `${prefix}${folderName}/`;
+      const command = new PutObjectCommand({
+        Bucket: bucket,
+        Key: key,
+        Body: new Uint8Array(),
+      });
+      await this.client.send(command);
+    } catch (error) {
+      this.handleError(error, `Creating folder ${folderName}`);
+    }
+  }
+
+  async uploadObject(bucket: string, key: string, file: File, onProgress?: UploadProgressCallback): Promise<void> {
+    if (!this.client) throw new Error('S3 Client not connected');
+
+    if (file.size > MULTIPART_THRESHOLD) {
+      return this.multipartUpload(bucket, key, file, onProgress);
+    }
+
+    try {
+      const body = new Uint8Array(await file.arrayBuffer());
+      const command = new PutObjectCommand({
+        Bucket: bucket,
+        Key: key,
+        Body: body,
+        ContentType: file.type || 'application/octet-stream',
+      });
+      await this.client.send(command);
+      onProgress?.(1);
+    } catch (error) {
+      this.handleError(error, `Uploading ${file.name}`);
+    }
+  }
+
+  private async multipartUpload(bucket: string, key: string, file: File, onProgress?: UploadProgressCallback): Promise<void> {
+    if (!this.client) throw new Error('S3 Client not connected');
+
+    const totalParts = Math.ceil(file.size / CHUNK_SIZE);
+    let completedParts = 0;
+    let uploadId: string | undefined;
+
+    try {
+      // 1. Initiate multipart upload
+      const initResponse = await this.client.send(new CreateMultipartUploadCommand({
+        Bucket: bucket,
+        Key: key,
+        ContentType: file.type || 'application/octet-stream',
+      }));
+      uploadId = initResponse.UploadId;
+
+      if (!uploadId) throw new Error('Failed to initiate multipart upload');
+
+      // 2. Upload parts with limited concurrency
+      const parts: CompletedPart[] = [];
+      const partQueue: Array<{ partNumber: number; start: number; end: number }> = [];
+
+      for (let i = 0; i < totalParts; i++) {
+        const start = i * CHUNK_SIZE;
+        const end = Math.min(start + CHUNK_SIZE, file.size);
+        partQueue.push({ partNumber: i + 1, start, end });
+      }
+
+      // Process parts with concurrency limit
+      let queueIndex = 0;
+      const processPart = async (): Promise<void> => {
+        while (queueIndex < partQueue.length) {
+          const current = partQueue[queueIndex++];
+          const chunk = file.slice(current.start, current.end);
+          const body = new Uint8Array(await chunk.arrayBuffer());
+
+          const uploadPartResponse = await this.client!.send(new UploadPartCommand({
+            Bucket: bucket,
+            Key: key,
+            UploadId: uploadId,
+            PartNumber: current.partNumber,
+            Body: body,
+          }));
+
+          parts.push({
+            ETag: uploadPartResponse.ETag,
+            PartNumber: current.partNumber,
+          });
+
+          completedParts++;
+          onProgress?.(completedParts / totalParts);
+        }
+      };
+
+      // Launch workers up to MAX_CONCURRENT_PARTS
+      const workers = Array.from(
+        { length: Math.min(MAX_CONCURRENT_PARTS, totalParts) },
+        () => processPart(),
+      );
+      await Promise.all(workers);
+
+      // 3. Complete multipart upload (parts must be sorted by PartNumber)
+      parts.sort((a, b) => (a.PartNumber ?? 0) - (b.PartNumber ?? 0));
+
+      await this.client.send(new CompleteMultipartUploadCommand({
+        Bucket: bucket,
+        Key: key,
+        UploadId: uploadId,
+        MultipartUpload: { Parts: parts },
+      }));
+
+    } catch (error) {
+      // Abort the multipart upload on failure to clean up partial parts
+      if (uploadId) {
+        try {
+          await this.client!.send(new AbortMultipartUploadCommand({
+            Bucket: bucket,
+            Key: key,
+            UploadId: uploadId,
+          }));
+        } catch (abortError) {
+          console.error('[S3Service] Failed to abort multipart upload:', abortError);
+        }
+      }
+      this.handleError(error, `Uploading ${file.name}`);
+    }
   }
 }

@@ -18,6 +18,8 @@ Use app here: [vajahath.github.io/localstack-explorer](https://vajahath.github.i
 - 📁 **Miller Column Navigation**: Intuitive multi-column layout for navigating through deeply nested S3 folders and objects.
 - 🛡️ **100% Client-Side**: Runs entirely in your browser. No server-side component needed beyond your LocalStack instance.
 - 📦 **S3 Object Management**: Browse buckets, list objects, and view detailed metadata with **Pagination Support** for large directories.
+- 📤 **High-Performance Uploads**: Effortlessly upload files via **Drag & Drop** or header buttons. Supports **Bulk Uploads** and **S3 Multipart Upload** for large files with real-time progress tracking.
+- 📂 **Folder Creation**: Create new S3 folders (directory prefixes) directly within any Miller column via an inline header UI.
 - 🏷️ **Custom Metadata Editing**: Easily view, add, edit, and delete custom S3 object metadata via a fast, reactive inline editor.
 - 💻 **Code Previews**: Integrated [Monaco Editor](https://microsoft.github.io/monaco-editor/) for high-quality syntax highlighting.
 - 🗜️ **Smart Previews**: Automatically handles **GZIP decompression** in a background web worker for compressed log files or data.
