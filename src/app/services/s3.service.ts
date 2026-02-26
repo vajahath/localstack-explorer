@@ -1,8 +1,10 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, signal, inject } from '@angular/core';
+import { NotificationService } from './notification.service';
 import {
   S3Client,
   ListBucketsCommand,
   ListObjectsV2Command,
+  GetObjectCommand,
   CommonPrefix,
   _Object,
 } from '@aws-sdk/client-s3';
@@ -18,7 +20,15 @@ export interface S3ListResult {
 })
 export class S3Service {
   private client: S3Client | null = null;
+  private notificationService = inject(NotificationService);
   readonly endpoint = signal<string | null>(null);
+
+  private handleError(error: any, context: string): never {
+    console.error(`[S3Service] ${context}:`, error);
+    const message = error?.message || 'An unknown error occurred';
+    this.notificationService.error(message, context);
+    throw error;
+  }
 
   connect(endpointUrl: string) {
     this.client = new S3Client({
@@ -31,19 +41,25 @@ export class S3Service {
       forcePathStyle: true, // Required for LocalStack
     });
     this.endpoint.set(endpointUrl);
+    this.notificationService.success(`Connected to ${endpointUrl}`, 'Connection');
   }
 
   disconnect() {
     this.client?.destroy();
     this.client = null;
     this.endpoint.set(null);
+    this.notificationService.info('Disconnected from S3', 'Connection');
   }
 
   async listBuckets() {
     if (!this.client) throw new Error('S3 Client not connected');
-    const command = new ListBucketsCommand({});
-    const response = await this.client.send(command);
-    return response.Buckets || [];
+    try {
+      const command = new ListBucketsCommand({});
+      const response = await this.client.send(command);
+      return response.Buckets || [];
+    } catch (error) {
+      this.handleError(error, 'Listing Buckets');
+    }
   }
 
   async listObjects(
@@ -53,34 +69,41 @@ export class S3Service {
   ): Promise<S3ListResult> {
     if (!this.client) throw new Error('S3 Client not connected');
 
-    const command = new ListObjectsV2Command({
-      Bucket: bucket,
-      Prefix: prefix,
-      Delimiter: '/',
-      ContinuationToken: continuationToken,
-      MaxKeys: 50, // Chunk size for pagination
-    });
+    try {
+      const command = new ListObjectsV2Command({
+        Bucket: bucket,
+        Prefix: prefix,
+        Delimiter: '/',
+        ContinuationToken: continuationToken,
+        MaxKeys: 50, // Chunk size for pagination
+      });
 
-    const response = await this.client.send(command);
+      const response = await this.client.send(command);
 
-    return {
-      prefixes: response.CommonPrefixes || [],
-      objects: response.Contents?.filter((obj) => obj.Key !== prefix) || [], // Filter out the directory object itself if it exists
-      nextContinuationToken: response.NextContinuationToken,
-    };
+      return {
+        prefixes: response.CommonPrefixes || [],
+        objects: response.Contents?.filter((obj) => obj.Key !== prefix) || [], // Filter out the directory object itself if it exists
+        nextContinuationToken: response.NextContinuationToken,
+      };
+    } catch (error) {
+      this.handleError(error, 'Listing Objects');
+    }
   }
 
   async getObject(bucket: string, key: string): Promise<Blob> {
     if (!this.client) throw new Error('S3 Client not connected');
-    const { GetObjectCommand } = await import('@aws-sdk/client-s3');
-    const command = new GetObjectCommand({
-      Bucket: bucket,
-      Key: key,
-    });
-    const response = await this.client.send(command);
-    const body = await response.Body?.transformToByteArray();
-    if (!body) throw new Error('Empty response body');
-    return new Blob([body]);
+    try {
+      const command = new GetObjectCommand({
+        Bucket: bucket,
+        Key: key,
+      });
+      const response = await this.client.send(command);
+      const body = await response.Body?.transformToByteArray();
+      if (!body) throw new Error('Empty response body');
+      return new Blob([body]);
+    } catch (error) {
+      this.handleError(error, 'Downloading Object');
+    }
   }
 
   async getObjectRange(
@@ -89,15 +112,14 @@ export class S3Service {
     bytes: number,
   ): Promise<{ content: string; isClipped: boolean }> {
     if (!this.client) throw new Error('S3 Client not connected');
-    const { GetObjectCommand } = await import('@aws-sdk/client-s3');
-
-    const command = new GetObjectCommand({
-      Bucket: bucket,
-      Key: key,
-      Range: `bytes=0-${bytes - 1}`,
-    });
 
     try {
+      const command = new GetObjectCommand({
+        Bucket: bucket,
+        Key: key,
+        Range: `bytes=0-${bytes - 1}`,
+      });
+
       const response = await this.client.send(command);
       const text = await response.Body?.transformToString();
       const contentRange = response.ContentRange || '';
@@ -110,8 +132,7 @@ export class S3Service {
         isClipped: totalSize > bytes,
       };
     } catch (error) {
-      console.error('Error fetching object range:', error);
-      throw error;
+      this.handleError(error, 'Fetching Preview');
     }
   }
 
@@ -121,15 +142,18 @@ export class S3Service {
     bytes: number,
   ): Promise<Uint8Array> {
     if (!this.client) throw new Error('S3 Client not connected');
-    const { GetObjectCommand } = await import('@aws-sdk/client-s3');
 
-    const command = new GetObjectCommand({
-      Bucket: bucket,
-      Key: key,
-      Range: `bytes=0-${bytes - 1}`,
-    });
+    try {
+      const command = new GetObjectCommand({
+        Bucket: bucket,
+        Key: key,
+        Range: `bytes=0-${bytes - 1}`,
+      });
 
-    const response = await this.client.send(command);
-    return (await response.Body?.transformToByteArray()) || new Uint8Array();
+      const response = await this.client.send(command);
+      return (await response.Body?.transformToByteArray()) || new Uint8Array();
+    } catch (error) {
+      this.handleError(error, 'Loading Binary Content');
+    }
   }
 }

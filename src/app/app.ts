@@ -2,12 +2,16 @@ import { Component, inject, OnInit } from '@angular/core';
 import { RouterOutlet, Router, ActivatedRoute } from '@angular/router';
 import { StateService } from './services/state.service';
 import { S3Service } from './services/s3.service';
+import { NotificationsComponent } from './components/notifications/notifications';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet],
-  template: ` <router-outlet></router-outlet> `,
+  imports: [RouterOutlet, NotificationsComponent],
+  template: `
+    <router-outlet></router-outlet>
+    <app-notifications></app-notifications>
+  `,
 })
 export class App implements OnInit {
   private route = inject(ActivatedRoute);
