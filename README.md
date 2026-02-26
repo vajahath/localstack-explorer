@@ -23,6 +23,7 @@ Use app here: [vajahath.github.io/localstack-explorer](https://vajahath.github.i
 - 🏷️ **Custom Metadata Editing**: Easily view, add, edit, and delete custom S3 object metadata via a fast, reactive inline editor.
 - 💻 **Code Previews**: Integrated [Monaco Editor](https://microsoft.github.io/monaco-editor/) for high-quality syntax highlighting.
 - 🗜️ **Smart Previews**: Automatically handles **GZIP decompression** in a background web worker for compressed log files or data.
+- 🖼️ **Native Image Previews**: Instantly view high-resolution images (WebP, JPG, PNG) using highly-optimized, memory-efficient S3 Presigned URLs.
 - 🧙 **Setup Wizard**: Easy configuration to connect to your local or remote LocalStack instance.
 - 🎨 **Modern UI/UX**: Built with a "premium" feel, featuring dark mode support and smooth transitions.
 - ⚡ **High Performance**: Leverages Angular Signals for efficient change detection and reactive state management.
