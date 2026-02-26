@@ -25,6 +25,7 @@ describe('DetailsPanelComponent', () => {
         getObjectMetadata: ReturnType<typeof vi.fn>;
         updateObjectMetadata: ReturnType<typeof vi.fn>;
         headObject: ReturnType<typeof vi.fn>;
+        getPresignedUrl: ReturnType<typeof vi.fn>;
         endpoint: ReturnType<typeof signal<string | null>>;
     };
     let themeServiceSpy: {
@@ -59,6 +60,7 @@ describe('DetailsPanelComponent', () => {
             getObjectMetadata: vi.fn().mockResolvedValue({}),
             updateObjectMetadata: vi.fn().mockResolvedValue(undefined),
             headObject: vi.fn().mockResolvedValue({}),
+            getPresignedUrl: vi.fn().mockResolvedValue('blob:https://mock-url.com/image'),
             endpoint: signal<string | null>(null),
         };
         themeServiceSpy = {
@@ -172,9 +174,9 @@ describe('DetailsPanelComponent', () => {
             },
         );
 
-        it('should return false for an unsupported file type (.png)', () => {
+        it('should return true for a supported image type (.png)', () => {
             const fixture = createFixture(makeFile('image.png'));
-            expect(fixture.componentInstance.isPreviewable()).toBe(false);
+            expect(fixture.componentInstance.isPreviewable()).toBe(true);
         });
 
         it('should return true for a .gz file (decompress preview)', () => {

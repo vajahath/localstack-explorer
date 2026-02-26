@@ -1,4 +1,5 @@
 import { Injectable, signal, inject } from '@angular/core';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { NotificationService } from './notification.service';
 import {
   S3Client,
@@ -149,6 +150,19 @@ export class S3Service {
       };
     } catch (error) {
       this.handleError(error, 'Fetching Preview');
+    }
+  }
+
+  async getPresignedUrl(bucket: string, key: string, expiresIn: number = 3600): Promise<string> {
+    if (!this.client) throw new Error('S3 Client not connected');
+    try {
+      const command = new GetObjectCommand({
+        Bucket: bucket,
+        Key: key,
+      });
+      return await getSignedUrl(this.client, command, { expiresIn });
+    } catch (error) {
+      this.handleError(error, 'Generating Link');
     }
   }
 

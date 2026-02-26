@@ -28,7 +28,7 @@ import { StateService } from '../../services/state.service';
           <!-- 1. FULL WIDTH PREVIEW (Top Priority) -->
           <div
             class="bg-gray-50 border-b border-gray-200 relative group min-h-[400px] dark:bg-slate-900 dark:border-slate-800"
-            [class.h-96]="isPreviewable() || previewContent()"
+            [class.h-96]="isPreviewable() || previewContent() || previewImageUrl()"
           >
             @if (isPreviewLoading()) {
               <div class="absolute inset-0 flex items-center justify-center bg-gray-50/80 z-20 transition-opacity dark:bg-slate-900/90">
@@ -39,8 +39,19 @@ import { StateService } from '../../services/state.service';
               </div>
             }
 
+            <!-- Image Preview -->
+            @if (isImage() && previewImageUrl()) {
+              <div class="w-full h-full flex items-center justify-center p-4">
+                <img 
+                  [src]="previewImageUrl()" 
+                  class="max-w-full max-h-full object-contain rounded-sm shadow-sm"
+                  alt="Object preview"
+                />
+              </div>
+            }
+
             <!-- Monaco Editor Container with Deferred Loading -->
-            @if (previewContent() !== null) {
+            @if (previewContent() !== null && !isImage()) {
               @defer (on timer(100ms)) {
                 <app-monaco-editor 
                   [content]="previewContent()!" 
@@ -56,7 +67,7 @@ import { StateService } from '../../services/state.service';
               }
             }
 
-            @if (!previewContent() && !isPreviewLoading()) {
+            @if (!previewContent() && !previewImageUrl() && !isPreviewLoading()) {
               <div class="absolute inset-0 flex flex-col items-center justify-center p-12 text-gray-400 bg-gray-50 z-10 dark:bg-slate-900 dark:text-slate-500">
                 <svg class="w-12 h-12 mb-3 text-gray-300 dark:text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
@@ -90,12 +101,12 @@ import { StateService } from '../../services/state.service';
               </div>
             }
 
-            @if (isClipped() && previewContent()) {
+            @if (isClipped() && (previewContent() || previewImageUrl())) {
               <div class="absolute bottom-3 right-3 px-3 py-1.5 bg-amber-50/90 backdrop-blur-sm border border-amber-200 text-amber-800 text-[10px] font-bold rounded-lg shadow-sm z-30 flex items-center gap-2 dark:bg-amber-900/20 dark:border-amber-900/30 dark:text-amber-400">
                 <svg class="w-3 h-3 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
-                {{ isGzip() ? 'Decompressed Preview (First 256KB raw)' : 'Clipped (First 5KB)' }}
+                {{ isGzip() ? 'Decompressed Preview (First 256KB raw)' : (isImage() ? 'Image Preview' : 'Clipped (First 5KB)') }}
               </div>
             }
           </div>
@@ -211,7 +222,13 @@ export class DetailsPanelComponent implements OnDestroy {
   isPreviewLoading = signal(false);
   isDecompressing = signal(false);
   previewContent = signal<string | null>(null);
+  previewImageUrl = signal<string | null>(null);
   isClipped = signal(false);
+
+  isImage = computed(() => {
+    const key = this.file()?.Key?.toLowerCase();
+    return !!(key?.endsWith('.png') || key?.endsWith('.jpg') || key?.endsWith('.jpeg') || key?.endsWith('.webp'));
+  });
 
   constructor() {
     // Replaces ngOnChanges — runs whenever file() changes
@@ -222,7 +239,15 @@ export class DetailsPanelComponent implements OnDestroy {
     });
   }
 
-  ngOnDestroy() { }
+  ngOnDestroy() {
+    this.revokePreviewUrl();
+  }
+
+  private revokePreviewUrl() {
+    // Only revoke if we actually created an Object URL (e.g. from local blobs in the future),
+    // but with presigned URLs we don't need to revoke. Still, clearing the state is good.
+    this.previewImageUrl.set(null);
+  }
 
   getFileName(key?: string): string {
     if (!key) return 'Unknown File';
@@ -240,7 +265,7 @@ export class DetailsPanelComponent implements OnDestroy {
     if (key.endsWith('.txt') || key.endsWith('.json') || key.endsWith('.md') || key.endsWith('.log') || key.endsWith('.js') || key.endsWith('.ts')) {
       return true;
     }
-    if (this.isGzip()) return true;
+    if (this.isGzip() || this.isImage()) return true;
     return false;
   }
 
@@ -288,6 +313,7 @@ export class DetailsPanelComponent implements OnDestroy {
 
   async fetchPreview() {
     this.previewContent.set(null);
+    this.revokePreviewUrl();
     this.isClipped.set(false);
 
     if (!this.file()?.Key || !this.bucketName() || !this.isPreviewable()) {
@@ -302,14 +328,19 @@ export class DetailsPanelComponent implements OnDestroy {
 
     this.isPreviewLoading.set(true);
     try {
-      const { content, isClipped } = await this.s3Service.getObjectRange(
-        this.bucketName(),
-        this.file()!.Key!,
-        1024 * 5
-      );
+      if (this.isImage()) {
+        const url = await this.s3Service.getPresignedUrl(this.bucketName(), this.file()!.Key!);
+        this.previewImageUrl.set(url);
+      } else {
+        const { content, isClipped } = await this.s3Service.getObjectRange(
+          this.bucketName(),
+          this.file()!.Key!,
+          1024 * 5
+        );
 
-      this.previewContent.set(content);
-      this.isClipped.set(isClipped);
+        this.previewContent.set(content);
+        this.isClipped.set(isClipped);
+      }
     } catch (err) {
       console.error('Failed to fetch preview', err);
       this.previewContent.set('Error: Could not load content preview.');

@@ -31,6 +31,10 @@ vi.mock('@aws-sdk/client-s3', () => {
     };
 });
 
+vi.mock('@aws-sdk/s3-request-presigner', () => ({
+    getSignedUrl: vi.fn().mockResolvedValue('https://mock-presigned-url.com/image.png')
+}));
+
 describe('S3Service', () => {
     let service: S3Service;
     let notificationSpy: {

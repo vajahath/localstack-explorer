@@ -203,24 +203,40 @@ import { S3Service, S3ListResult, UploadProgressCallback } from '../../services/
                 [class.border-transparent]="activeObject()?.Key !== file.Key || !isLastColumn()"
               >
                 <!-- File Icon -->
-                <svg
-                  [class.text-blue-200]="activeObject()?.Key === file.Key && isLastColumn()"
-                  [class.text-gray-400]="activeObject()?.Key !== file.Key"
-                  [class.dark:text-slate-500]="activeObject()?.Key !== file.Key"
-                  [class.text-blue-500]="activeObject()?.Key === file.Key && !isLastColumn()"
-                  [class.dark:text-blue-400]="activeObject()?.Key === file.Key && !isLastColumn()"
-                  class="w-4 h-4 shrink-0 transition-colors"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
-                  ></path>
-                </svg>
+                @if (isImageFile(file.Key!)) {
+                  <svg
+                    [class.text-blue-200]="activeObject()?.Key === file.Key && isLastColumn()"
+                    [class.text-indigo-400]="activeObject()?.Key !== file.Key"
+                    [class.dark:text-indigo-500]="activeObject()?.Key !== file.Key"
+                    [class.text-indigo-500]="activeObject()?.Key === file.Key && !isLastColumn()"
+                    [class.dark:text-indigo-400]="activeObject()?.Key === file.Key && !isLastColumn()"
+                    class="w-4 h-4 shrink-0 transition-colors"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                  </svg>
+                } @else {
+                  <svg
+                    [class.text-blue-200]="activeObject()?.Key === file.Key && isLastColumn()"
+                    [class.text-gray-400]="activeObject()?.Key !== file.Key"
+                    [class.dark:text-slate-500]="activeObject()?.Key !== file.Key"
+                    [class.text-blue-500]="activeObject()?.Key === file.Key && !isLastColumn()"
+                    [class.dark:text-blue-400]="activeObject()?.Key === file.Key && !isLastColumn()"
+                    class="w-4 h-4 shrink-0 transition-colors"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                    ></path>
+                  </svg>
+                }
                 <span class="truncate">{{ getFileName(file.Key!) }}</span>
               </button>
             </li>
@@ -436,5 +452,10 @@ export class MillerColumnListComponent {
 
   formatProgress(progress: number): string {
     return Math.round(progress * 100) + '%';
+  }
+
+  isImageFile(key: string): boolean {
+    const k = key.toLowerCase();
+    return k.endsWith('.png') || k.endsWith('.jpg') || k.endsWith('.jpeg') || k.endsWith('.webp');
   }
 }
