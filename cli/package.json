@@ -1,7 +1,7 @@
 {
   "name": "localstack-explorer",
   "type": "module",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "CLI for LocalStack Explorer — lightweight server to serve the built UI locally and open the browser.",
   "keywords": [
     "localstack",
