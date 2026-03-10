@@ -31,7 +31,7 @@ jobs:
 
       - name: Run CLI tests
         working-directory: ./cli
-        run: npm test
+        run: npm test -- --run
 
   verify-root:
     name: Verify root package (Angular app)

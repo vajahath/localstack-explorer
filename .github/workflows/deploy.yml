@@ -61,7 +61,7 @@ jobs:
 
       - name: Run CLI tests
         working-directory: ./cli
-        run: npm test
+        run: npm test -- --run
 
   version-check:
     name: Ensure package versions match
@@ -129,11 +129,12 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
           always-auth: true
 
-      - name: Install CLI deps and build CLI package
-        working-directory: ./cli
+      - name: Install dependencies and build CLI package
         run: |
           npm ci
-          npm run build
+          cd cli && npm ci
+          npm run build:cli
+          cd cli && npm run build
 
       - name: Publish CLI package to npm
         working-directory: ./cli

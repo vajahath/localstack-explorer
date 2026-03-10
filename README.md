@@ -1,4 +1,6 @@
-# 🪣 LocalStack Explorer [![Build and Deploy to GitHub Pages](https://github.com/vajahath/localstack-explorer/actions/workflows/deploy.yml/badge.svg)](https://github.com/vajahath/localstack-explorer/actions/workflows/deploy.yml) 
+# 🪣  LocalStack Explorer
+
+[![Build and Deploy to GitHub Pages](https://github.com/vajahath/localstack-explorer/actions/workflows/deploy.yml/badge.svg)](https://github.com/vajahath/localstack-explorer/actions/workflows/deploy.yml) 
 
 A modern, fast, and **privacy-focused** client-side UI for exploring LocalStack S3 buckets.
 
@@ -185,4 +187,4 @@ To deploy a new version:
 
 ## 📄 License
 
-This project is licensed under the MIT License.
+MIT &copy; 2026 Vajahath Ahmed

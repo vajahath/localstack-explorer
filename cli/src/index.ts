@@ -10,7 +10,8 @@ import meow from 'meow';
 import open from 'open';
 import latestVersion from 'latest-version'; // Fetches the version directly from the registry
 import semver from 'semver'; // For comparing versions
-import { version as currentVersion } from '../../package.json'; // Current version from package.json
+import packageJson from '../package.json' assert { type: 'json' };
+const currentVersion = packageJson.version;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -152,7 +153,6 @@ process.on('SIGTERM', () => {
 });
 
 import updateNotifier from 'update-notifier';
-import packageJson from '../package.json' assert { type: 'json' };
 
 updateNotifier({ pkg: packageJson }).notify();
 

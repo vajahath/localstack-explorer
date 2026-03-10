@@ -33,7 +33,7 @@
   "types": "./dist/index.d.mts",
   "files": [
     "dist",
-    "localstack-ui/browser",
+    "localstack-explorer/browser",
     "README.md",
     "package.json"
   ],
