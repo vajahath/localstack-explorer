@@ -1,0 +1,72 @@
+{
+  "name": "localstack-explorer",
+  "type": "module",
+  "version": "1.0.0",
+  "description": "CLI for LocalStack Explorer — lightweight server to serve the built UI locally and open the browser.",
+  "keywords": [
+    "localstack",
+    "s3",
+    "explorer",
+    "s3-browser",
+    "aws",
+    "angular",
+    "typescript",
+    "client-side",
+    "cli",
+    "local"
+  ],
+  "author": "Vajahath Ahmed <vajuoff.1@gmail.com>",
+  "license": "MIT",
+  "homepage": "https://github.com/vajahath/localstack-explorer#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vajahath/localstack-explorer.git",
+    "directory": "cli"
+  },
+  "bugs": {
+    "url": "https://github.com/vajahath/localstack-explorer/issues"
+  },
+  "exports": {
+    ".": "./dist/index.mjs",
+    "./package.json": "./package.json"
+  },
+  "types": "./dist/index.d.mts",
+  "files": [
+    "dist",
+    "localstack-ui/browser",
+    "README.md",
+    "package.json"
+  ],
+  "scripts": {
+    "build": "cd .. && npm run build && cd cli && tsdown",
+    "dev": "cd .. && npm run build && cd cli && tsdown --watch",
+    "start:dev": "tsx src/index.ts",
+    "test": "vitest",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.5",
+    "@types/semver": "^7.7.1",
+    "@types/update-notifier": "^6.0.8",
+    "@typescript/native-preview": "7.0.0-dev.20260309.1",
+    "bumpp": "^10.4.1",
+    "tsdown": "^0.21.1",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.19.11",
+    "boxen": "^8.0.1",
+    "hono": "^4.12.5",
+    "latest-version": "^9.0.0",
+    "meow": "^14.1.0",
+    "open": "^11.0.0",
+    "semver": "^7.7.4",
+    "update-notifier": "^7.3.1"
+  },
+  "bin": {
+    "localstack-explorer": "dist/index.mjs"
+  }
+}

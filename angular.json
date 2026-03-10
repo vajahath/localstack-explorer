@@ -7,7 +7,7 @@
   },
   "newProjectRoot": "projects",
   "projects": {
-    "localstack-ui": {
+    "localstack-explorer": {
       "projectType": "application",
       "schematics": {},
       "root": "",
@@ -58,10 +58,10 @@
           "builder": "@angular/build:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "localstack-ui:build:production"
+              "buildTarget": "localstack-explorer:build:production"
             },
             "development": {
-              "buildTarget": "localstack-ui:build:development"
+              "buildTarget": "localstack-explorer:build:development"
             }
           },
           "defaultConfiguration": "development"

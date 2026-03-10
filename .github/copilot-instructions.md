@@ -54,3 +54,8 @@ You are an expert in TypeScript, Angular, and scalable web application developme
 - Design services around a single responsibility
 - Use the `providedIn: 'root'` option for singleton services
 - Use the `inject()` function instead of constructor injection
+
+## Project
+
+- This is a localstack file explorer fully running on client side using the aws-sdk clint v3.
+- It uses the miller column layout to display the files and folders.

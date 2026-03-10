@@ -15,28 +15,12 @@ import { NotificationService } from '../../services/notification.service';
           role="alert"
         >
           <!-- Icon -->
-          <div class="shrink-0 mt-0.5" [class]="getIconClasses(n.type)">
+          <div class="shrink-0 mt-0.5 inline-flex items-center justify-center" [class]="getIconClasses(n.type)">
             @switch (n.type) {
-              @case ('success') {
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
-                </svg>
-              }
-              @case ('error') {
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              }
-              @case ('warning') {
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-              }
-              @default {
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              }
+              @case ('success') { <span class="inline-flex items-center justify-center w-5 h-5">✅</span> }
+              @case ('error') { <span class="inline-flex items-center justify-center w-5 h-5">❌</span> }
+              @case ('warning') { <span class="inline-flex items-center justify-center w-5 h-5">⚠️</span> }
+              @default { <span class="inline-flex items-center justify-center w-5 h-5">ℹ️</span> }
             }
           </div>
 
@@ -51,11 +35,10 @@ import { NotificationService } from '../../services/notification.service';
           <!-- Close button -->
           <button
             (click)="notificationService.remove(n.id)"
-            class="shrink-0 text-current opacity-40 hover:opacity-100 transition-opacity p-0.5 hover:bg-black/5 rounded-lg cursor-pointer"
+            class="shrink-0 text-current opacity-40 hover:opacity-100 transition-opacity p-0.5 hover:bg-black/5 rounded-lg cursor-pointer inline-flex items-center justify-center"
+            title="Close"
           >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <span class="w-4 h-4">✖️</span>
           </button>
         </div>
       }
@@ -70,28 +53,12 @@ import { NotificationService } from '../../services/notification.service';
           role="alert"
         >
           <!-- Icon -->
-          <div class="shrink-0 mt-0.5" [class]="getIconClasses(n.type)">
+          <div class="shrink-0 mt-0.5 inline-flex items-center justify-center" [class]="getIconClasses(n.type)">
             @switch (n.type) {
-              @case ('success') {
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
-                </svg>
-              }
-              @case ('error') {
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              }
-              @case ('warning') {
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-              }
-              @default {
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              }
+              @case ('success') { <span class="inline-flex items-center justify-center w-5 h-5">✅</span> }
+              @case ('error') { <span class="inline-flex items-center justify-center w-5 h-5">❌</span> }
+              @case ('warning') { <span class="inline-flex items-center justify-center w-5 h-5">⚠️</span> }
+              @default { <span class="inline-flex items-center justify-center w-5 h-5">ℹ️</span> }
             }
           </div>
 
@@ -106,11 +73,10 @@ import { NotificationService } from '../../services/notification.service';
           <!-- Close button -->
           <button
             (click)="notificationService.remove(n.id)"
-            class="shrink-0 text-current opacity-40 hover:opacity-100 transition-opacity p-0.5 hover:bg-black/5 rounded-lg cursor-pointer"
+            class="shrink-0 text-current opacity-40 hover:opacity-100 transition-opacity p-0.5 hover:bg-black/5 rounded-lg cursor-pointer inline-flex items-center justify-center"
+            title="Close"
           >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <span class="w-4 h-4">✖️</span>
           </button>
         </div>
       }

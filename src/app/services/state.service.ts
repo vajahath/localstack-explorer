@@ -1,6 +1,6 @@
 import { Injectable, computed, signal, inject, effect } from '@angular/core';
 import { Router } from '@angular/router';
-import { _Object } from '@aws-sdk/client-s3';
+import { type _Object } from '@aws-sdk/client-s3';
 
 @Injectable({
   providedIn: 'root',

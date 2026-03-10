@@ -7,22 +7,34 @@ import { ThemeService } from '../../services/theme.service';
 import { Router, ActivatedRoute } from '@angular/router';
 import { MillerColumnsComponent } from '../miller-columns/miller-columns';
 import { DetailsPanelComponent } from '../details-panel/details-panel';
+import { UpdateNotifier } from '../update-notifier/update-notifier';
 
 @Component({
   selector: 'app-explorer',
   standalone: true,
-  imports: [MillerColumnsComponent, DetailsPanelComponent],
+  imports: [MillerColumnsComponent, DetailsPanelComponent, UpdateNotifier],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="h-screen flex flex-col bg-white font-sans text-gray-900 overflow-hidden dark:bg-slate-950 dark:text-slate-100">
+    <div
+      class="h-screen flex flex-col bg-white font-sans text-gray-900 overflow-hidden dark:bg-slate-950 dark:text-slate-100"
+    >
       <!-- Header Area -->
       <header
         class="h-14 border-b border-gray-200 flex items-center justify-between px-4 shrink-0 bg-white dark:bg-slate-950 dark:border-slate-800"
       >
         <div class="flex items-center gap-6">
-          <h1 class="text-xl font-bold tracking-tight text-gray-900 dark:text-white">LocalStack Explorer</h1>
+          <h1 class="text-xl font-bold tracking-tight text-gray-900 dark:text-white">
+            🪣 LocalStack Explorer
+          </h1>
 
-          <div class="text-[10px] px-2 py-0.5 rounded-md bg-gray-100 text-gray-500 font-mono dark:bg-slate-800 dark:text-slate-400 border border-gray-200/50 dark:border-slate-700/50">
+          @if (showUpdateNotifier()) {
+            @defer {
+              <app-update-notifier />
+            }
+          }
+          <div
+            class="text-[10px] px-2 py-0.5 rounded-md bg-gray-100 text-gray-500 font-mono dark:bg-slate-800 dark:text-slate-400 border border-gray-200/50 dark:border-slate-700/50"
+          >
             {{ s3Service.endpoint() }}
           </div>
         </div>
@@ -65,23 +77,17 @@ import { DetailsPanelComponent } from '../details-panel/details-panel';
             [bucketName]="stateService.selectedBucket()!"
           ></app-details-panel>
         } @else if (buckets().length === 0) {
-          <div class="flex-1 flex flex-col items-center justify-center text-gray-400 dark:bg-slate-950">
-            <div class="w-16 h-16 rounded-full bg-gray-50 flex items-center justify-center mb-4 dark:bg-slate-900 dark:border dark:border-slate-800">
-              <svg
-                class="w-8 h-8 text-gray-300 dark:text-slate-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="1.5"
-                  d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-                ></path>
-              </svg>
+          <div
+            class="flex-1 flex flex-col items-center justify-center text-gray-400 dark:bg-slate-950"
+          >
+            <div
+              class="w-16 h-16 rounded-full bg-gray-50 flex items-center justify-center mb-4 dark:bg-slate-900 dark:border dark:border-slate-800"
+            >
+              <span class="inline-flex items-center justify-center text-3xl text-gray-300 dark:text-slate-600">📦</span>
             </div>
-            <p class="text-gray-500 font-medium dark:text-slate-400">No buckets found in this localstack instance.</p>
+            <p class="text-gray-500 font-medium dark:text-slate-400">
+              No buckets found in this localstack instance.
+            </p>
           </div>
         }
       </main>
@@ -96,10 +102,15 @@ export class ExplorerComponent {
   private route = inject(ActivatedRoute);
 
   buckets = signal<Bucket[]>([]);
+  showUpdateNotifier = signal<boolean>(true);
 
   private params = toSignal(this.route.params);
 
   constructor() {
+    // Hide update notifier when running on GitHub Pages (github.io)
+    this.showUpdateNotifier.set(
+      !(typeof window !== 'undefined' && window.location.hostname.includes('vajahath.github.io')),
+    );
     effect(async () => {
       const params = this.params();
       if (!params) return;
@@ -145,7 +156,11 @@ export class ExplorerComponent {
       this.buckets.set(fetchedBuckets);
 
       // If we don't have a selected bucket from URL but we have buckets, pick the first one
-      if (!this.stateService.selectedBucket() && fetchedBuckets.length > 0 && fetchedBuckets[0].Name) {
+      if (
+        !this.stateService.selectedBucket() &&
+        fetchedBuckets.length > 0 &&
+        fetchedBuckets[0].Name
+      ) {
         console.log('[ExplorerComponent] Auto-selecting first bucket:', fetchedBuckets[0].Name);
         this.stateService.navigateBucket(fetchedBuckets[0].Name!);
       }

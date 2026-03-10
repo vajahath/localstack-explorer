@@ -14,19 +14,14 @@ import { NotificationService } from '../../services/notification.service';
       <div class="flex items-center justify-between px-1">
         <h4 class="text-[10px] font-bold text-gray-400 uppercase tracking-[0.15em] dark:text-slate-500">Custom Metadata</h4>
         <button (click)="addMetadata()" type="button" class="text-blue-500 hover:text-blue-600 dark:text-blue-400 text-[11px] font-bold py-1 px-2 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors inline-flex items-center gap-1">
-          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+          <span class="w-3 h-3">➕</span>
           Add
         </button>
       </div>
       
       <div class="bg-gray-50/50 border border-gray-100 rounded-xl overflow-hidden shadow-sm dark:bg-slate-900/40 dark:border-slate-800">
         @if (isLoading()) {
-          <div class="p-6 flex justify-center">
-            <svg class="animate-spin h-5 w-5 text-blue-500 opacity-50" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-          </div>
+          <div class="p-6 flex justify-center">⏳</div>
         } @else {
           <form [formGroup]="form" (ngSubmit)="saveMetadata()">
             @if (metadataControls().length === 0) {
@@ -55,7 +50,7 @@ import { NotificationService } from '../../services/notification.service';
                       class="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 dark:text-slate-600 dark:hover:bg-red-900/30 dark:hover:text-red-400 rounded transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
                       title="Remove"
                     >
-                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                      <span class="inline-flex items-center justify-center w-3.5 h-3.5">🗑️</span>
                     </button>
                   </div>
                 }
@@ -76,12 +71,11 @@ import { NotificationService } from '../../services/notification.service';
                    [disabled]="isSaving() || form.invalid" 
                    class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold rounded-md shadow-sm transition-all active:scale-[0.97] disabled:opacity-50 disabled:active:scale-100 flex items-center gap-1.5"
                  >
-                    @if (isSaving()) {
-                       <svg class="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                       Saving...
-                    } @else {
-                       Save
-                    }
+                      @if (isSaving()) {
+                        <span class="inline-flex items-center justify-center">⏳ Saving...</span>
+                      } @else {
+                        Save
+                      }
                  </button>
               </div>
             }

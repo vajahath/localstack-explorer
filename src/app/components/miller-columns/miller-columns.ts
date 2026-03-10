@@ -62,9 +62,7 @@ import { MillerColumnListComponent } from '../miller-column-list/miller-column-l
       <!-- Path Breadcrumb Footer -->
       <div class="h-10 border-t border-gray-200 bg-white flex items-center px-4 shrink-0 z-20 shadow-sm overflow-x-auto hide-scrollbar dark:bg-slate-950 dark:border-slate-800">
         <div class="flex items-center gap-1.5 text-[11px] font-medium text-gray-400 w-full whitespace-nowrap dark:text-slate-500">
-             <svg class="w-3.5 h-3.5 text-gray-300 shrink-0 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
-             </svg>
+             <div class="w-3.5 h-3.5 text-gray-300 shrink-0 dark:text-slate-600">📁</div>
              <button 
                 (click)="navigateToDepth(-1)"
                 class="hover:text-blue-500 hover:bg-blue-50 px-1.5 py-0.5 rounded transition-all cursor-pointer shrink-0 dark:hover:bg-blue-900/30 dark:hover:text-blue-400"

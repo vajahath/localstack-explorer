@@ -1,13 +1,15 @@
-name: Verify Build
+name: CI Verify
 
 on:
   pull_request:
-    branches:
-      - main
+    branches: [ main ]
+  push:
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
-  test:
-    name: Unit Tests
+  verify-cli:
+    name: Verify CLI package
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -19,16 +21,22 @@ jobs:
           node-version: '22'
           cache: 'npm'
 
-      - name: Install dependencies
+      - name: Install CLI dependencies
+        working-directory: ./cli
         run: npm ci
 
-      - name: Run unit tests
-        run: npx ng test --watch=false --runner=vitest
+      - name: Typecheck (CLI)
+        working-directory: ./cli
+        run: npm run typecheck
 
-  build:
-    name: Build
+      - name: Run CLI tests
+        working-directory: ./cli
+        run: npm test
+
+  verify-root:
+    name: Verify root package (Angular app)
     runs-on: ubuntu-latest
-    needs: test
+    needs: verify-cli
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -39,8 +47,11 @@ jobs:
           node-version: '22'
           cache: 'npm'
 
-      - name: Install dependencies
+      - name: Install root dependencies
         run: npm ci
 
-      - name: Build
-        run: npm run build -- --configuration production
+      - name: Build Angular app (for CLI)
+        run: npm run build:cli
+
+      - name: Run unit tests (Angular)
+        run: npx ng test --watch=false

@@ -1,9 +1,8 @@
-name: Build and Deploy to GitHub Pages
+name: Release Deploy (Pages + npm)
 
 on:
-  push:
-    branches:
-      - main
+  release:
+    types: [published]
   workflow_dispatch:
 
 permissions:
@@ -12,12 +11,12 @@ permissions:
   id-token: write
 
 concurrency:
-  group: 'pages'
+  group: 'release-deploy'
   cancel-in-progress: true
 
 jobs:
-  test:
-    name: Unit Tests
+  verify-frontend:
+    name: Verify Frontend
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -29,16 +28,19 @@ jobs:
           node-version: '22'
           cache: 'npm'
 
-      - name: Install dependencies
+      - name: Install root dependencies
         run: npm ci
 
-      - name: Run unit tests
+      - name: Run frontend unit tests
         run: npx ng test --watch=false --runner=vitest
 
-  build:
-    name: Build
+      - name: Verify frontend builds (no base-href)
+        run: npm run build:cli
+
+  verify-cli:
+    name: Verify CLI package
     runs-on: ubuntu-latest
-    needs: test
+    needs: verify-frontend
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -49,15 +51,56 @@ jobs:
           node-version: '22'
           cache: 'npm'
 
-      - name: Install dependencies
+      - name: Install CLI dependencies
+        working-directory: ./cli
         run: npm ci
 
-      - name: Build
-        # Note: --base-href should match your repo name if deploying to <username>.github.io/<repo-name>/
-        run: npm run build -- --configuration production --base-href /localstack-explorer/
+      - name: Typecheck (CLI)
+        working-directory: ./cli
+        run: npm run typecheck
+
+      - name: Run CLI tests
+        working-directory: ./cli
+        run: npm test
+
+  version-check:
+    name: Ensure package versions match
+    runs-on: ubuntu-latest
+    needs: [verify-frontend, verify-cli]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Compare versions
+        run: |
+          node -e "const r=require('./package.json').version; const c=require('./cli/package.json').version; if(r!==c){console.error('Version mismatch:', r, c); process.exit(1);} console.log('Version ok', r);"
+
+  build-and-deploy-pages:
+    name: Build Frontend (Pages) and Deploy
+    runs-on: ubuntu-latest
+    needs: version-check
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Build Angular app for GitHub Pages
+        run: npm run build:pages
 
       - name: Copy index.html to 404.html
-        run: cp dist/localstack-ui/browser/index.html dist/localstack-ui/browser/404.html
+        run: cp dist/localstack-explorer/browser/index.html dist/localstack-explorer/browser/404.html
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
@@ -65,15 +108,36 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: dist/localstack-ui/browser
+          path: dist/localstack-explorer/browser
 
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+  build-cli-and-publish:
+    name: Build Frontend (CLI) and Publish CLI to npm
+    runs-on: ubuntu-latest
+    needs: version-check
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node for npm publish
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+          always-auth: true
+
+      - name: Install CLI deps and build CLI package
+        working-directory: ./cli
+        run: |
+          npm ci
+          npm run build
+
+      - name: Publish CLI package to npm
+        working-directory: ./cli
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          npm publish --access public

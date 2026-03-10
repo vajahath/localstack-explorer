@@ -1,7 +1,6 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { RouterOutlet, Router, ActivatedRoute } from '@angular/router';
 import { StateService } from './services/state.service';
-import { S3Service } from './services/s3.service';
 import { NotificationsComponent } from './components/notifications/notifications';
 
 @Component({
@@ -14,10 +13,8 @@ import { NotificationsComponent } from './components/notifications/notifications
   `,
 })
 export class App implements OnInit {
-  private route = inject(ActivatedRoute);
   private router = inject(Router);
   private stateService = inject(StateService);
-  private s3Service = inject(S3Service);
 
   ngOnInit() {
     // If not connected and no endpoint in URL, force them to the setup wizard
