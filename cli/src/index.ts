@@ -11,6 +11,7 @@ import open from 'open';
 import latestVersion from 'latest-version'; // Fetches the version directly from the registry
 import semver from 'semver'; // For comparing versions
 import packageJson from '../package.json' assert { type: 'json' };
+import boxen from 'boxen';
 const currentVersion = packageJson.version;
 
 const __filename = fileURLToPath(import.meta.url);
@@ -44,10 +45,7 @@ app.get('*', (c) => {
 
 // Use `meow` for CLI parsing
 const cli = meow(
-  `
-╔════════════════════════════════════════════╗
-║           🪣  LocalStack Explorer           ║
-╚════════════════════════════════════════════╝
+  `${boxen('LocalStack Explorer')}
 
 Modern, privacy-focused client-side UI for exploring
 LocalStack S3 buckets
@@ -171,9 +169,8 @@ if (!(process.argv.includes('--help') || process.argv.includes('-h'))) {
     .then(async ({ currentVersion, latestVersion, updateAvailable }) => {
       if (!updateAvailable) return;
 
-      const boxen = await import('boxen');
       console.log(
-        boxen.default(
+        boxen(
           `🚀 Update available: ${currentVersion} → ${latestVersion}\nRun \`npm install -g localstack-explorer\` to update.`,
         ),
       );
