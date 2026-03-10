@@ -1,6 +1,6 @@
 {
   "name": "localstack-explorer",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "LocalStack Explorer — modern, privacy-focused client-side UI for exploring LocalStack S3 buckets.",
   "author": "Vajahath Ahmed <vajuoff.1@gmail.com>",
   "license": "MIT",
@@ -32,7 +32,8 @@
     "build:pages": "ng build --configuration production --base-href /localstack-explorer/",
     "watch": "ng build --watch --configuration development",
     "watch:prod": "concurrently 'ng build --watch' 'node scripts/watch-sync.mjs'",
-    "test": "ng test"
+    "test": "ng test",
+    "bumpp": "bumpp package.json package-lock.json cli/package.json cli/package-lock.json"
   },
   "prettier": {
     "printWidth": 100,
@@ -59,7 +60,6 @@
     "@aws-sdk/client-s3": "^3.998.0",
     "@aws-sdk/s3-request-presigner": "^3.999.0",
     "@monaco-editor/loader": "^1.7.0",
-    
     "monaco-editor": "^0.55.1",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
@@ -69,6 +69,7 @@
     "@angular/cli": "^21.1.5",
     "@angular/compiler-cli": "^21.1.0",
     "@tailwindcss/postcss": "^4.1.12",
+    "bumpp": "^10.4.1",
     "chokidar": "^5.0.0",
     "concurrently": "^9.2.1",
     "jsdom": "^27.1.0",
