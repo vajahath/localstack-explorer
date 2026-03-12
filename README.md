@@ -6,7 +6,7 @@ A modern, fast, and **privacy-focused** client-side UI for exploring LocalStack 
 
 Use app here: [vajahath.github.io/localstack-explorer](https://vajahath.github.io/localstack-explorer/)
 
-![Demo](ui.webp)
+![Demo](https://raw.githubusercontent.com/vajahath/localstack-explorer/main/ui.webp)
 
 ## CLI
 
